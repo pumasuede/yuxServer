@@ -1,0 +1,21 @@
+package msg;
+
+message Header
+{
+    required  uint32 version     = 1;
+    required  uint32 type        = 2;
+    required  uint32 sm_id       = 3;
+    optional   uint32 action_id   = 4;
+}
+
+message Body
+{
+    extensions 100 to 9999;
+}
+
+message Msg
+{
+    required Header header = 1;
+    optional Body body = 2;
+}
+

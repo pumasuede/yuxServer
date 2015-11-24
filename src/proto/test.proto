@@ -1,0 +1,6 @@
+message Test
+{
+optional uint32 a = 1;
+repeated uint32 yux = 2;
+
+}

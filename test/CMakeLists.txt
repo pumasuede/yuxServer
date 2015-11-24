@@ -1,0 +1,5 @@
+AUX_SOURCE_DIRECTORY(. DIR_SRCS)
+INCLUDE_DIRECTORIES(../src)
+LINK_DIRECTORIES(/usr/local/lib)
+ADD_EXECUTABLE(TestClient TestClient.cpp)
+TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine)

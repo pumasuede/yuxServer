@@ -1,0 +1,5 @@
+AUX_SOURCE_DIRECTORY(. DIR_SRCS)
+INCLUDE_DIRECTORIES(include .. /usr/local/include)
+LINK_DIRECTORIES(/usr/local/lib)
+ADD_LIBRARY(StateMachine SHARED ${DIR_SRCS})
+TARGET_LINK_LIBRARIES(StateMachine protobuf)

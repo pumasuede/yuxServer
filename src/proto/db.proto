@@ -1,0 +1,14 @@
+import "message.proto";
+
+package db;
+
+message InsertRequest
+{
+    required string key = 1;
+    required string value = 2;
+}
+
+extend msg.Body
+{
+    optional InsertRequest insert_request = 101;
+}

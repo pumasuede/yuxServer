@@ -1,0 +1,8 @@
+import "message.proto";
+
+package echo;
+
+extend msg.Body
+{
+    optional string message = 1001;
+}

@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC    -shared -Wl,-soname,libPbout.so -o libPbout.so CMakeFiles/Pbout.dir/db.pb.o CMakeFiles/Pbout.dir/echo.pb.o CMakeFiles/Pbout.dir/message.pb.o CMakeFiles/Pbout.dir/test.pb.o  -L/usr/local/lib -lprotobuf -Wl,-rpath,/usr/local/lib 

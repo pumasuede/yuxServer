@@ -1,0 +1,79 @@
+OUTPUT = yuxServer
+
+#define is debug or not
+#-------------------
+DEBUG = YES
+#-------------------
+
+CC = gcc
+CXX = g++
+LD = g++
+
+DEBUG_CFLAGS =  -g
+DEBUG_LDFLAGS = -g
+RELEASE_CFLAGS =  -O3
+RELEASE_LDFLAGS =
+
+INCLUDES = -I. -I/home/yxiao2/stack/ -I/home/yxiao2/stack/protobuf/include/
+LIBS = -L/home/yxiao2/stack/protobuf/lib -lprotobuf -lpthread
+
+ifeq (YES, $(DEBUG))
+    CFLAGS = $(DEBUG_CFLAGS)
+    LDFLAGS = $(DEBUG_LDFLAGS)
+else
+    CFLAGS = $(RELEASE_CFLAGS)
+    LDFLAGS = $(RELEASE_LDFLAGS)
+endif
+
+#define the dependent libs for subdirs
+
+PROTO_DIR = proto
+PROTO_OUT_DIR = pbout
+SRCS = $(wildcard *.cc)
+
+#define the subdirs of source files
+SUBDIRS = $(PROTO_OUT_DIR) base common statemachine
+PROTOS = $(wildcard ${PROTO_DIR}/*.proto)
+#PB_SRCS = $(patsubst ${PROTO_DIR}/%.proto, ${PROTO_OUT_DIR}/%.pb.cc, $(PROTOS))
+
+#OBJS = $(addsuffix .o, $(basename ${SRCS}))
+
+MODS = $(addprefix lib, $(addsuffix .so, ${SUBDIRS}))
+MOD_LIBS = $(addprefix -l, ${SUBDIRS})
+
+PROTOC = /home/yxiao2/stack/protobuf/bin/protoc
+
+.PHONY: all pb pre $(OUTPUT) test clean
+all: pre pb $(OUTPUT) $(MODS) test
+pre:
+	@if [ ! -e install ]; then mkdir install; fi
+	@echo "MODS: $(MODS)"
+	@echo "SRCS: $(SRCS)"
+pb:
+	@if [ ! -e $(PROTO_OUT_DIR) ]; then mkdir $(PROTO_OUT_DIR); fi
+	$(PROTOC) -I=${PROTO_DIR} --cpp_out=${PROTO_OUT_DIR} ${PROTO_DIR}/*.proto
+	@echo -e "\nCompile GPB completed\n"
+%.so: pre pb
+	@SUBDIR=$(basename $@); SUBDIR=$${SUBDIR/lib/};\
+	SRCS=`find $$SUBDIR -name '*.cc' -o -name '*.cpp'`;\
+	echo -e "... Begin to build $@ ... sources files:\n$$SRCS\n";\
+	$(CXX) -shared -fPIC $(CFLAGS) $(INCLUDES) $(LIBS) $$SRCS -o install/$@
+$(OUTPUT): $(MODS) $(SRCS)
+	@echo ""
+	@echo "*** Begin to build: $(OUTPUT)"
+	$(LD) $(LDFLAGS) $(LIBS) -Linstall $(MOD_LIBS) $(INCLUDES)  $(SRCS) -o $@
+test: pre pb $(MODS)
+test: test/TestClient.cpp
+	@echo "*** Build test"
+	$(CXX)  $(CFLAGS) $(INCLUDES) $(LIBS) -Linstall $(MOD_LIBS)  $< -o install/$@
+#%.o: %.cc
+#	@echo ""
+#	@echo "... Compiling $< --> $@ ..."
+#	$(CXX) -c $(CFLAGS) -o $@  $< $(INCLUDES)
+clean:
+	rm -f $(OUTPUT) $(PROTO_OUT_DIR)/*.pb.* install/*
+
+#subdirs: $(SUBDIRS)
+#$(SUBDIRS):
+#	@echo "beigin to make under $(SUBDIRS)"
+#	$(MAKE) -C $@
