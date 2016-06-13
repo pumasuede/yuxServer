@@ -71,13 +71,13 @@ int Socket::read(SocketBase*& sock)
 
     if (readRet == 0)
     {
-        cout<<"the socket is closed by remote peer\n";
+        cout<<"The socket is closed by remote peer\n";
         return -1;
     }
 
     if (errno == EAGAIN)
     {
-        //reading buffer is complete
+        //reading buffer is complete, no available data
         cout<<"buf received: "<<pos<<"bytes\n";
     }
 

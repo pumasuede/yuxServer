@@ -52,6 +52,7 @@ int parse_arg(int argc, char* argv[])
         }
     }
 }
+
 int main(int argc, char* argv[])
 {
     parse_arg(argc, argv);
@@ -71,6 +72,9 @@ int main(int argc, char* argv[])
     ServerSocket servSock(server_ip.c_str(), server_port);
     cout<<"listen on IP:"<<servSock.getPeer().host_<<" and Port:"<<servSock.getPeer().port_<<"...\n";
 
+
+    //server.listen
+
     uint16_t listenFd = servSock.fd();
     fdToSkt[listenFd] = &servSock;
 
@@ -84,6 +88,8 @@ int main(int argc, char* argv[])
     const int ee_size = 10;
     struct epoll_event *events = new struct epoll_event[ee_size];
 
+    //server.loop
+
     while (1)
     {
         int n = epoll_wait(epollFd_, events, ee_size, -1);
@@ -94,7 +100,7 @@ int main(int argc, char* argv[])
         {
             int fd = events[i].data.fd;
             SocketBase *skt = fdToSkt[fd];
-            SocketBase *newSkt = skt; // set the same value 
+            SocketBase *newSkt = skt; // set the same value
 
             if (!skt)
                 continue;

@@ -1,3 +1,5 @@
+project (serverTest)
+cmake_minimum_required (VERSION 2.6)
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 INCLUDE_DIRECTORIES(../src)
 LINK_DIRECTORIES(/usr/local/lib)

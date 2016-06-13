@@ -23,7 +23,7 @@ class VBuff
 
     size_t length() const { return length_; }
 
-    bool bytesExist(size_t offset, size_t length) const; 
+    bool bytesExist(size_t offset, size_t length) const;
 
     private:
     const uint8_t *bytes_;
