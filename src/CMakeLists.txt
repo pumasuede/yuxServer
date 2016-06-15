@@ -2,9 +2,9 @@ project (yuxServer)
 cmake_minimum_required (VERSION 2.6)
 
 ADD_SUBDIRECTORY(pbout)
+ADD_SUBDIRECTORY(statemachine)
 ADD_SUBDIRECTORY(base)
 #ADD_SUBDIRECTORY(common)
-ADD_SUBDIRECTORY(statemachine)
 
 INCLUDE_DIRECTORIES(.)
 LINK_DIRECTORIES(/usr/local/lib)

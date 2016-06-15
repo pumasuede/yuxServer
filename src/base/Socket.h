@@ -39,8 +39,8 @@ class SocketBase
         void setPeer(const char *host, uint16_t port) { peer_ = Peer(host, port); }
         void setNonBlocking();
         void close();
-        virtual int read(SocketBase*& sock) = 0;
-        virtual int write(SocketBase*& sock) = 0;
+        virtual int read() {} ;
+        virtual int write() = 0;
         virtual int send(uint8_t* buf, size_t size) { return ::write(fd_, buf, size); }
         virtual int recv(uint8_t* buf, size_t size) { return ::read(fd_, buf, size); }
         int fd() { return fd_; }
@@ -56,8 +56,8 @@ class Socket : public SocketBase
         Socket(int fd, const Peer& peer) : SocketBase(fd, peer) {}
         int connect();
         int connect(const char *host, uint16_t port) { peer_ = Peer(host, port); connect(); }
-        int read(SocketBase*& sock);
-        int write(SocketBase*& sock);
+        int read();
+        int write();
 };
 
 class ServerSocket : public SocketBase
@@ -67,8 +67,8 @@ class ServerSocket : public SocketBase
         ServerSocket(const char* host, uint16_t port) { bind(host, port); listen(); }
         int bind(const char* host, uint16_t port);
         int listen(){ return ::listen(fd_, 0); }
-        int read(SocketBase*& sock);
-        int write(SocketBase*& sock);
+        SocketBase* accept();
+        int write();
     private:
         Peer self_;
 };

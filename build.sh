@@ -1,7 +1,11 @@
 #! /bin/bash
+if [[ ! -d build ]]; then mkdir -p build/{src,test} ; fi
+
 cd build
-cmake ../src
+cd src
+cmake ../../src
 make
-cmake ../test
+cd ../test
+cmake ../../test
 make
 cd ..

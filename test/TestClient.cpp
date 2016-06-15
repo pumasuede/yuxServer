@@ -9,7 +9,7 @@ using namespace yux::base;
 int main(int argc, char** argv)
 {
     Socket sock;
-    sock.connect("10.19.228.169", 8000);
+    sock.connect("127.0.0.1", 8080);
 
     Msg msg;
     Header* hdr = msg.mutable_header();

@@ -28,7 +28,8 @@ int parse_arg(int argc, char* argv[])
     struct option long_opts[] =
     {
         {"ip", 1, 0, 'a'},
-        {"port", 1, 0, 'p'}
+        {"port", 1, 0, 'p'},
+        {0, 0, 0, 0}
     };
 
     while (1)
@@ -107,22 +108,14 @@ int main(int argc, char* argv[])
 
             if ( events[i].events & EPOLLOUT )
             {
-                skt->write(newSkt);
+                skt->write();
             }
             else
             {
-                int ret = skt->read(newSkt);
-
-                //cout<<"ret Fd:"<<retFd<<" newSkt: "<<newSkt<<" listenFd:"<<skt->fd()<<"...\n";
-                if (ret < 0)
+                if (fd == servSock.fd())
                 {
-                    cout<<"abnormal in Socket read, will delete socket..\n";
-                    cout.flush();
-                    fdToSkt[fd] = NULL;
-                    delete skt;
-                }
-                else if ( newSkt != skt )
-                {
+                    cout<<"ret newSkt: "<<newSkt<<" listenFd:"<<fd<<"...\n";
+                    SocketBase *newSkt = dynamic_cast<ServerSocket*>(skt)->accept();
                     int newFd = newSkt->fd();
                     fdToSkt[newFd] = newSkt;
 
@@ -130,6 +123,20 @@ int main(int argc, char* argv[])
                     ee_.events = EPOLLIN;
                     ee_.data.fd  = newFd;
                     epoll_ctl(epollFd_, EPOLL_CTL_ADD, newFd, &ee_);
+
+                }
+                else
+                {
+                    cout<<"read on client socket "<<fd<<" \n";
+                    int ret = skt->read();
+                    if (ret < 0)
+                    {
+                        cout<<"abnormal in Socket read, will delete socket..\n";
+                        epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, NULL);
+                        fdToSkt[fd] = NULL;
+                        delete skt;
+                    }
+
                 }
             }
         }

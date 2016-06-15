@@ -55,7 +55,7 @@ int Socket::connect()
     return ::connect(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
 }
 
-int Socket::read(SocketBase*& sock)
+int Socket::read()
 {
     // data
     int readRet = 0, pos = 0;
@@ -66,26 +66,33 @@ int Socket::read(SocketBase*& sock)
 
     while ( (readRet = ::read(fd_, &buf[pos], 99)) > 0 )
     {
-        pos += readRet;
-    }
+        if (readRet > 0)
+        {
+            pos += readRet;
+            continue;
+        }
+        else if (readRet == 0)
+        {
+            cout<<"The socket is closed by remote peer\n";
+            return -1;
+        }
 
-    if (readRet == 0)
-    {
-        cout<<"The socket is closed by remote peer\n";
-        return -1;
-    }
 
-    if (errno == EAGAIN)
-    {
-        //reading buffer is complete, no available data
-        cout<<"buf received: "<<pos<<"bytes\n";
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            //reading buffer is complete, no available data
+            cout<<"buf received: "<<pos<<"bytes\n";
+            break;
+        }
+        if (errno == EINTR)
+            continue;
     }
 
     std::auto_ptr<msg::Msg> msg(new msg::Msg());
     if (!msg->ParseFromArray(buf, pos))
     {
         cout<<"msg parse error "<<"\n";
-        return 0;
+        return -1;
     }
 
     const msg::Header& header = msg->header();;
@@ -115,7 +122,7 @@ int Socket::read(SocketBase*& sock)
     return 0;
 }
 
-int Socket::write(SocketBase*& sock)
+int Socket::write()
 {
     return fd_;
 }
@@ -128,19 +135,21 @@ int ServerSocket::bind(const char* host, uint16_t port)
    return ::bind(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
 }
 
-int ServerSocket::read(SocketBase*& sock)
+SocketBase* ServerSocket::accept()
 {
     sockaddr_in  clientAddr;
     socklen_t    addrLen = sizeof(clientAddr);
     int newFd = ::accept(fd_, (sockaddr*) &clientAddr, &addrLen);
     cout<<"new client from ["<<inet_ntoa(clientAddr.sin_addr)<<":"<<ntohs(clientAddr.sin_port)<<"]...\n";
     Peer peer(inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
-    sock = new Socket(newFd, peer);
+
+    SocketBase *sock = new Socket(newFd, peer);
     sock->setNonBlocking();
-    return newFd;
+
+    return sock;
 }
 
-int ServerSocket::write(SocketBase*& sock)
+int ServerSocket::write()
 {
     return fd_;
 }
