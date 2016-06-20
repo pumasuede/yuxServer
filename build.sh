@@ -1,7 +1,8 @@
 #! /bin/bash
+
+cd `dirname $0`/build
 if [[ ! -d build ]]; then mkdir -p build/{src,test} ; fi
 
-cd build
 cd src
 cmake ../../src
 make
