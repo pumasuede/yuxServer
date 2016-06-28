@@ -5,28 +5,117 @@
 namespace yux {
 namespace base {
 
+
+Fde* Fdes::getFde(int fd)
+{
+    while (fdeList_.size() <= fd)
+    {
+        Fde *fde = new Fde(fdeList_.size(), Fde::NONE);
+        fdeList_.push_back(fde);
+    }
+    return fdeList_[fd];
+}
+
+Fdes::~Fdes()
+{
+    std::vector<Fde*>::iterator it = fdeList_.begin();
+    int fdMax = 0;
+    while (it != fdeList_.end())
+    {
+        delete *it;
+        ++it;
+    }
+    fdeList_.clear();
+    readyList_.clear();
+}
+
 // Select
 
-bool SelectFde::readable()
+void SelectFdes::create()
 {
-    return true;
+    FD_ZERO(&rfds_);
+    FD_ZERO(&wfds_);
+    FD_ZERO(&efds_);
+    maxFd_ = 0;
 }
 
-bool SelectFde::writable()
+void SelectFdes::addWatch(int fd, Fde::FdEvent event)
 {
-    return true;
+    Fde *fde = getFde(fd);
+
+    if (event == Fde::READ)
+    {
+        FD_SET(fd, &rfds_);
+    }
+    if (event == Fde::WRITE)
+    {
+        FD_SET(fd, &wfds_);
+    }
+
+    if (fd > maxFd_)
+    {
+        maxFd_ = fd;
+    }
 }
 
-// Epoll
-
-bool EpollFde::readable()
+void SelectFdes::delWatch(int fd, Fde::FdEvent event)
 {
-    return events_ & EPOLLIN;
+    Fde *fde = getFde(fd);
+    fde->setEvents(Fde::NONE);
+
+    if (event == Fde::READ)
+    {
+        FD_CLR(fd, &rfds_);
+    }
+
+    if (event == Fde::WRITE)
+    {
+        FD_CLR(fd, &wfds_);
+    }
+
+    int n = fdeList_.size()-1;
+    while (n>0 && fdeList_[n]->events() == Fde::NONE)
+    {
+        --n;
+    }
+
+    maxFd_ = n;
 }
 
-bool EpollFde::writable()
+int SelectFdes::wait()
 {
-    return events_ & EPOLLOUT;
+    fd_set rfds = rfds_;
+    fd_set wfds = wfds_;
+    fd_set efds = efds_;
+
+    int n = select(maxFd_+1, &rfds, &wfds, &efds, 0);
+    if (n<0)
+        std::cout<<"Error at select: "<<errno<<"\n";
+
+    Fde *fde;
+    int fdEvents;
+
+    readyList_.clear();
+
+    for (int i = 0; i<= maxFd_; i++)
+    {
+        fdEvents = Fde::NONE;
+        if ( FD_ISSET(i, &rfds) )
+            fdEvents |= Fde::READ;
+        if ( FD_ISSET(i, &wfds) )
+            fdEvents |= Fde::WRITE;
+        if ( FD_ISSET(i, &efds) )
+            fdEvents |= Fde::EXCEPT;
+
+        if (fdEvents == Fde::NONE)
+            continue;
+
+        fde = getFde(i);
+        fde->setEvents(fdEvents);
+        readyList_.push_back(fde);
+    }
+
+    return n;
 }
 
 EpollFdes::EpollFdes():ee_size_(100)
@@ -39,18 +128,24 @@ void EpollFdes::create()
     epollFd_ = epoll_create(10);
 }
 
-void EpollFdes::addWatch(int fd, Fdes::FdEvent event)
+void EpollFdes::addWatch(int fd, Fde::FdEvent event)
 {
+    Fde *fde = getFde(fd);
+    fde->setEvents(Fde::NONE);
+
     struct epoll_event ee = { 0 };
-    ee.events = (event == READ) ? EPOLLIN : EPOLLOUT;
+    ee.events = (event = Fde::READ) ? EPOLLIN : EPOLLOUT;
     ee.data.fd  = fd;
     epoll_ctl(epollFd_, EPOLL_CTL_ADD, fd, &ee);
 }
 
-void EpollFdes::delWatch(int fd, Fdes::FdEvent event)
+void EpollFdes::delWatch(int fd, Fde::FdEvent event)
 {
+    Fde *fde = getFde(fd);
+    fde->setEvents(Fde::NONE);
+
     struct epoll_event ee = { 0 };
-    ee.events = (event == READ) ? EPOLLIN : EPOLLOUT;
+    ee.events = (event == Fde::READ) ? EPOLLIN : EPOLLOUT;
     ee.data.fd  = fd;
 
     epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, &ee);
@@ -62,12 +157,27 @@ int EpollFdes::wait()
     if (n<0)
         std::cout<<"Error at epoll_wait: "<<errno<<"\n";
 
+    readyList_.clear();
+
     for (int i = 0; i < n; i++)
     {
         int fd = events_[i].data.fd;
         uint32_t events = events_[i].events;
-        Fde *fde = new EpollFde(fd, events);
-        fdeList_.push_back(fde);
+        int fdEvents = Fde::NONE;
+
+        if (events & EPOLLIN)
+        {
+            fdEvents |= Fde::READ;
+        }
+
+        if (events & EPOLLOUT)
+        {
+            fdEvents |= Fde::WRITE;
+        }
+
+        Fde *fde = getFde(fd);
+        fde->setEvents(fdEvents);
+        readyList_.push_back(fde);
     }
 
     return n;

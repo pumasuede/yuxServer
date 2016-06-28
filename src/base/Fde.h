@@ -1,4 +1,5 @@
 #include <sys/epoll.h>
+#include <sys/select.h>
 #include <vector>
 
 namespace yux {
@@ -9,19 +10,29 @@ class Fde
     public:
         typedef enum
         {
-            NONE   = 0,
+            NO_TYPE   = 0,
             SELECT = 1,
             EPOLL  = 2
         } FdeType;
 
+        typedef enum
+        {
+            NONE = 0,
+            READ = 1,
+            WRITE = 1<<1,
+            EXCEPT = 1<<2
+        } FdEvent;
 
-        Fde() : fd_(0) {}
-        Fde(int fd) : fd_(fd) {}
-        virtual bool readable() { return false; }
-        virtual bool writable() { return false; }
-        virtual FdeType type()  { return NONE; }
+        Fde() : fd_(0), events_(NONE) {}
+        Fde(int fd, int events) : fd_(fd), events_(events) {}
+        virtual bool readable() { return events_ | READ; }
+        virtual bool writable() { return events_ | WRITE; }
+        virtual bool isExcept() { return events_ | EXCEPT; }
         virtual int fd() { return fd_; }
+        virtual void setEvents(int events) { events_ = events; }
+        virtual int events() {return events_;}
     private:
+        int events_;
         int fd_;
 };
 
@@ -29,51 +40,43 @@ class Fdes
 {
 
     public:
-        typedef enum
-        {
-            READ = 0,
-            WRITE =1
-        } FdEvent;
-
+        Fde* getFde(int fd);
+        ~Fdes();
         // init fdes.
         virtual void create() = 0;
         // return the count of events to be handled.
         virtual int wait() = 0;
         // add fd to watch
-        virtual void addWatch(int fd, Fdes::FdEvent event) = 0;
-        virtual void delWatch(int fd, Fdes::FdEvent event) = 0;
+        virtual void addWatch(int fd, Fde::FdEvent event) = 0;
+        virtual void delWatch(int fd, Fde::FdEvent event) = 0;
 
         // get available fdes;
+        std::vector<Fde*>& readyList() { return readyList_; }
         std::vector<Fde*>& fdeList() { return fdeList_; }
 
     protected:
+        std::vector<Fde*> readyList_;
         std::vector<Fde*> fdeList_;
 };
 
 // Select
 
-class SelectFde: public Fde
+class SelectFdes : public Fdes
 {
     public:
-        bool readable();
-        bool writable();
+        void create();
+        int wait();
+        void addWatch(int fd, Fde::FdEvent event);
+        void delWatch(int fd, Fde::FdEvent event);
         Fde::FdeType type() { return Fde::SELECT; }
     private:
-        int events_;
+        fd_set rfds_;
+        fd_set wfds_;
+        fd_set efds_;
+        int    maxFd_;
 };
 
 // Epoll
-
-class EpollFde : public Fde
-{
-    public:
-        EpollFde(int fd, uint32_t events) : Fde(fd), events_(events){}
-        bool readable();
-        bool writable();
-        Fde::FdeType type() { return Fde::EPOLL; }
-    private:
-        uint32_t  events_;
-};
 
 class EpollFdes : public Fdes
 {
@@ -81,8 +84,9 @@ class EpollFdes : public Fdes
         EpollFdes();
         void create();
         int wait();
-        void addWatch(int fd, Fdes::FdEvent event);
-        void delWatch(int fd, Fdes::FdEvent event);
+        void addWatch(int fd, Fde::FdEvent event);
+        void delWatch(int fd, Fde::FdEvent event);
+        Fde::FdeType type() { return Fde::EPOLL; }
     private:
         int epollFd_;
         const int ee_size_;

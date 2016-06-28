@@ -34,13 +34,15 @@ Server::Server(string host, uint16_t port)
         cout << "Error at listening errno:"<<errno<<"\n";
         exit(-1);
     }
-    cout<<"listen on IP:"<<servSock_->getPeer().host_<<" and Port:"<<servSock_->getPeer().port_<<"...\n";
+
+    int servFd = servSock_->fd();
+    cout<<"listen on IP:"<<servSock_->getPeer().host_<<" and Port:"<<servSock_->getPeer().port_<<" Fd:"<<servFd<<"...\n";
 
     // create events;
     fdes_ = new EpollFdes();
     fdes_->create();
-    fdToSkt_[servSock_->fd()] = servSock_;
-    fdes_->addWatch(servSock_->fd(), Fdes::READ);
+    fdToSkt_[servFd] = servSock_;
+    fdes_->addWatch(servFd, Fde::READ);
 }
 
 Server::~Server()
@@ -55,11 +57,15 @@ void Server::loopOnce()
     int n = fdes_->wait();
     if (n<=0)
         return;
-    vector<Fde*>& fdeList = fdes_->fdeList();
-    vector<Fde*>::iterator it = fdeList.begin();
-    while (it != fdeList.end())
+    vector<Fde*>& readyFdes = fdes_->readyList();
+    if (n != readyFdes.size())
     {
-        Fde *fde = *it;
+        cout<<"Warn: wait result doesn't match ready Fd events "<<n<<" : "<<readyFdes.size()<<" \n";
+    }
+
+    for (int i=0; i<readyFdes.size(); i++)
+    {
+        Fde *fde = readyFdes[i];
         int fd = fde->fd();
         SocketBase *skt = fdToSkt_[fd];
         if (fde->readable())
@@ -69,7 +75,7 @@ void Server::loopOnce()
                 SocketBase *newSkt = dynamic_cast<ServerSocket*>(skt)->accept();
                 int newFd = newSkt->fd();
                 fdToSkt_[newFd] = newSkt;
-                fdes_->addWatch(newFd, Fdes::READ);
+                fdes_->addWatch(newFd, Fde::READ);
                 cout<<"ret new socket: "<<newSkt<<" listenFd:"<<newFd<<"...\n";
             }
             else
@@ -79,7 +85,7 @@ void Server::loopOnce()
                 if (ret < 0)
                 {
                     cout<<"abnormal in Socket read, will delete socket..\n";
-                    fdes_->delWatch(fd, Fdes::READ);
+                    fdes_->delWatch(fd, Fde::READ);
                     fdToSkt_[fd] = NULL;
                     delete skt;
                 }
@@ -88,13 +94,9 @@ void Server::loopOnce()
         else if (fde->writable())
         {
             skt->write();
-            fdes_->delWatch(fd, Fdes::WRITE);
+            fdes_->delWatch(fd, Fde::WRITE);
         }
-
-        delete fde;
-        it = fdeList.erase(it);
     }
-
 }
 
 int Server::getListenFd()
