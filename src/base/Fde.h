@@ -1,4 +1,6 @@
+#ifdef __linux__
 #include <sys/epoll.h>
+#endif
 #include <sys/select.h>
 #include <vector>
 
@@ -41,7 +43,7 @@ class Fdes
 
     public:
         Fde* getFde(int fd);
-        ~Fdes();
+        virtual ~Fdes();
         // init fdes.
         virtual void create() = 0;
         // return the count of events to be handled.
@@ -77,7 +79,7 @@ class SelectFdes : public Fdes
 };
 
 // Epoll
-
+#ifdef __linux__
 class EpollFdes : public Fdes
 {
     public:
@@ -93,5 +95,6 @@ class EpollFdes : public Fdes
         // epoll events
         struct epoll_event *events_;
 };
+#endif
 
 }}

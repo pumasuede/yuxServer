@@ -2,6 +2,10 @@ project (yuxServer)
 cmake_minimum_required (VERSION 2.6)
 
 SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_VERBOSE_MAKEFILE OFF)
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+SET(CMAKE_CXX_COMPILER "clang++")
+MESSAGE("Compiler: ${CMAKE_CXX_COMPILER}")
 
 ADD_SUBDIRECTORY(pbout)
 ADD_SUBDIRECTORY(statemachine)

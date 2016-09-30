@@ -33,10 +33,12 @@ int parse_arg(int argc, char* argv[])
         {0, 0, 0, 0}
     };
 
+    int c;
+
     while (1)
     {
         int idx = 0;
-        int c = getopt_long( argc, argv, "a:p:", long_opts, &idx);
+        c = getopt_long( argc, argv, "a:p:", long_opts, &idx);
         if (c<0)
             break;
         switch ( c )
@@ -53,6 +55,7 @@ int parse_arg(int argc, char* argv[])
                 break;
         }
     }
+    return c;
 }
 
 int main(int argc, char* argv[])

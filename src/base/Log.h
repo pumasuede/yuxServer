@@ -93,13 +93,13 @@ int log_write(int level, const char *fmt, ...);
 #endif
 
 #define log_debug(fmt, args...)	\
-                                                  log_write(Logger::LEVEL_DEBUG, "[%x][%s - %s] "fmt, pthread_self(), __FILE__, __func__, ##args)
+    log_write(Logger::LEVEL_DEBUG, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
 #define log_info(fmt, args...)	\
-                                                  log_write(Logger::LEVEL_INFO, "[%x][%s - %s] "fmt, pthread_self(), __FILE__, __func__, ##args)
+    log_write(Logger::LEVEL_INFO, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
 #define log_warn(fmt, args...)	\
-                                                  log_write(Logger::LEVEL_WARN, "[%x][%s - %s] "fmt, pthread_self(), __FILE__, __func__, ##args)
+    log_write(Logger::LEVEL_WARN, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
 #define log_error(fmt, args...)	\
-                                                  log_write(Logger::LEVEL_ERROR, "[%x][%s - %s] "fmt, pthread_self(), __FILE__, __func__, ##args)
+    log_write(Logger::LEVEL_ERROR, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
 #define log_fatal(fmt, args...)	\
-                                                  log_write(Logger::LEVEL_FATAL, "[%x][%s - %s] "fmt, pthread_self(), __FILE__, __func__, ##args)
+    log_write(Logger::LEVEL_FATAL, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
 #endif

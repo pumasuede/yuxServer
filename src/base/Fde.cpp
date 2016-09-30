@@ -117,6 +117,8 @@ int SelectFdes::wait()
 
     return n;
 }
+//Epoll
+#ifdef __linux__
 
 EpollFdes::EpollFdes():ee_size_(100)
 {
@@ -182,5 +184,6 @@ int EpollFdes::wait()
 
     return n;
 }
+#endif
 
 }}

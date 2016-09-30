@@ -39,7 +39,7 @@ class SocketBase
         void setPeer(const char *host, uint16_t port) { peer_ = Peer(host, port); }
         void setNonBlocking();
         void close();
-        virtual int read() {} ;
+        virtual int read() {return 0;}
         virtual int write() = 0;
         virtual int send(uint8_t* buf, size_t size) { return ::write(fd_, buf, size); }
         virtual int recv(uint8_t* buf, size_t size) { return ::read(fd_, buf, size); }
@@ -55,7 +55,7 @@ class Socket : public SocketBase
         Socket() {}
         Socket(int fd, const Peer& peer) : SocketBase(fd, peer) {}
         int connect();
-        int connect(const char *host, uint16_t port) { peer_ = Peer(host, port); connect(); }
+        int connect(const char *host, uint16_t port) { peer_ = Peer(host, port); return connect(); }
         int read();
         int write();
 };
