@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
@@ -25,6 +26,7 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 }  // namespace
 
 
+void protobuf_AssignDesc_test_2eproto() GOOGLE_ATTRIBUTE_COLD;
 void protobuf_AssignDesc_test_2eproto() {
   protobuf_AddDesc_test_2eproto();
   const ::google::protobuf::FileDescriptor* file =
@@ -57,6 +59,7 @@ inline void protobuf_AssignDescriptorsOnce() {
                  &protobuf_AssignDesc_test_2eproto);
 }
 
+void protobuf_RegisterTypes(const ::std::string&) GOOGLE_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
@@ -70,6 +73,7 @@ void protobuf_ShutdownFile_test_2eproto() {
   delete Test_reflection_;
 }
 
+void protobuf_AddDesc_test_2eproto() GOOGLE_ATTRIBUTE_COLD;
 void protobuf_AddDesc_test_2eproto() {
   static bool already_here = false;
   if (already_here) return;
@@ -93,22 +97,12 @@ struct StaticDescriptorInitializer_test_2eproto {
   }
 } static_descriptor_initializer_test_2eproto_;
 
-namespace {
-
-static void MergeFromFail(int line) GOOGLE_ATTRIBUTE_COLD;
-static void MergeFromFail(int line) {
-  GOOGLE_CHECK(false) << __FILE__ << ":" << line;
-}
-
-}  // namespace
-
-
 // ===================================================================
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Test::kAFieldNumber;
 const int Test::kYuxFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Test::Test()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
@@ -169,6 +163,7 @@ Test* Test::New(::google::protobuf::Arena* arena) const {
 }
 
 void Test::Clear() {
+// @@protoc_insertion_point(message_clear_start:Test)
   a_ = 0u;
   yux_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -179,7 +174,7 @@ void Test::Clear() {
 
 bool Test::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:Test)
   for (;;) {
@@ -263,8 +258,9 @@ void Test::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_end:Test)
 }
 
-::google::protobuf::uint8* Test::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* Test::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:Test)
   // optional uint32 a = 1;
   if (has_a()) {
@@ -286,6 +282,7 @@ void Test::SerializeWithCachedSizes(
 }
 
 int Test::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:Test)
   int total_size = 0;
 
   // optional uint32 a = 1;
@@ -317,19 +314,27 @@ int Test::ByteSize() const {
 }
 
 void Test::MergeFrom(const ::google::protobuf::Message& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(generalized_merge_from_start:Test)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   const Test* source = 
       ::google::protobuf::internal::DynamicCastToGenerated<const Test>(
           &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:Test)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:Test)
     MergeFrom(*source);
   }
 }
 
 void Test::MergeFrom(const Test& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(class_specific_merge_from_start:Test)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   yux_.MergeFrom(from.yux_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_a()) {
@@ -342,12 +347,14 @@ void Test::MergeFrom(const Test& from) {
 }
 
 void Test::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:Test)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Test::CopyFrom(const Test& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:Test)
   if (&from == this) return;
   Clear();
   MergeFrom(from);

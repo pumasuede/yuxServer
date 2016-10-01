@@ -1,10 +1,12 @@
 #include <assert.h>
-#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef __linux__
+#include <sys/epoll.h>
+#endif
 
 #include <sstream>
 

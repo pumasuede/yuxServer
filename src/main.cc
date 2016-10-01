@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <sys/epoll.h>
 #include <errno.h>
 #include <getopt.h>
 #include <sys/time.h>
@@ -8,6 +7,9 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
+#ifdef __linux__
+    #include <sys/epoll.h>
+#endif
 #include "common/Server.h"
 
 using namespace std;

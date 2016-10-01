@@ -1,7 +1,19 @@
 project (serverTest)
 cmake_minimum_required (VERSION 2.6)
+
+SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_VERBOSE_MAKEFILE OFF)
+IF (APPLE)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
+ENDIF()
+SET(CMAKE_CXX_COMPILER "g++")
+MESSAGE("Compiler: ${CMAKE_CXX_COMPILER}")
+
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 INCLUDE_DIRECTORIES(../src)
-LINK_DIRECTORIES(/usr/local/lib /workspace/git/yuxServer/install/bin)
+LINK_DIRECTORIES(/usr/local/lib ../../install/bin)
 ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
+
+SET(CMAKE_INSTALL_PREFIX ../../install)
+INSTALL(TARGETS TestClient DESTINATION bin)

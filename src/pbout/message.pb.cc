@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
@@ -33,6 +34,7 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 }  // namespace
 
 
+void protobuf_AssignDesc_message_2eproto() GOOGLE_ATTRIBUTE_COLD;
 void protobuf_AssignDesc_message_2eproto() {
   protobuf_AddDesc_message_2eproto();
   const ::google::protobuf::FileDescriptor* file =
@@ -97,6 +99,7 @@ inline void protobuf_AssignDescriptorsOnce() {
                  &protobuf_AssignDesc_message_2eproto);
 }
 
+void protobuf_RegisterTypes(const ::std::string&) GOOGLE_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
@@ -118,6 +121,7 @@ void protobuf_ShutdownFile_message_2eproto() {
   delete Msg_reflection_;
 }
 
+void protobuf_AddDesc_message_2eproto() GOOGLE_ATTRIBUTE_COLD;
 void protobuf_AddDesc_message_2eproto() {
   static bool already_here = false;
   if (already_here) return;
@@ -148,24 +152,14 @@ struct StaticDescriptorInitializer_message_2eproto {
   }
 } static_descriptor_initializer_message_2eproto_;
 
-namespace {
-
-static void MergeFromFail(int line) GOOGLE_ATTRIBUTE_COLD;
-static void MergeFromFail(int line) {
-  GOOGLE_CHECK(false) << __FILE__ << ":" << line;
-}
-
-}  // namespace
-
-
 // ===================================================================
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Header::kVersionFieldNumber;
 const int Header::kTypeFieldNumber;
 const int Header::kSmIdFieldNumber;
 const int Header::kActionIdFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Header::Header()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
@@ -229,11 +223,20 @@ Header* Header::New(::google::protobuf::Arena* arena) const {
 }
 
 void Header::Clear() {
+// @@protoc_insertion_point(message_clear_start:msg.Header)
+#if defined(__clang__)
+#define ZR_HELPER_(f) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"") \
+  __builtin_offsetof(Header, f) \
+  _Pragma("clang diagnostic pop")
+#else
 #define ZR_HELPER_(f) reinterpret_cast<char*>(\
   &reinterpret_cast<Header*>(16)->f)
+#endif
 
 #define ZR_(first, last) do {\
-  ::memset(&first, 0,\
+  ::memset(&(first), 0,\
            ZR_HELPER_(last) - ZR_HELPER_(first) + sizeof(last));\
 } while (0)
 
@@ -250,7 +253,7 @@ void Header::Clear() {
 
 bool Header::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:msg.Header)
   for (;;) {
@@ -369,8 +372,9 @@ void Header::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_end:msg.Header)
 }
 
-::google::protobuf::uint8* Header::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* Header::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:msg.Header)
   // required uint32 version = 1;
   if (has_version()) {
@@ -401,6 +405,7 @@ void Header::SerializeWithCachedSizes(
 }
 
 int Header::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:msg.Header)
   int total_size = 0;
 
   if (has_version()) {
@@ -427,6 +432,7 @@ int Header::RequiredFieldsByteSizeFallback() const {
   return total_size;
 }
 int Header::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:msg.Header)
   int total_size = 0;
 
   if (((_has_bits_[0] & 0x00000007) ^ 0x00000007) == 0) {  // All required fields are present.
@@ -467,19 +473,27 @@ int Header::ByteSize() const {
 }
 
 void Header::MergeFrom(const ::google::protobuf::Message& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(generalized_merge_from_start:msg.Header)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   const Header* source = 
       ::google::protobuf::internal::DynamicCastToGenerated<const Header>(
           &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:msg.Header)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:msg.Header)
     MergeFrom(*source);
   }
 }
 
 void Header::MergeFrom(const Header& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(class_specific_merge_from_start:msg.Header)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_version()) {
       set_version(from.version());
@@ -500,12 +514,14 @@ void Header::MergeFrom(const Header& from) {
 }
 
 void Header::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:msg.Header)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Header::CopyFrom(const Header& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:msg.Header)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -642,8 +658,8 @@ void Header::clear_action_id() {
 
 // ===================================================================
 
-#ifndef _MSC_VER
-#endif  // !_MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Body::Body()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
@@ -703,6 +719,7 @@ Body* Body::New(::google::protobuf::Arena* arena) const {
 }
 
 void Body::Clear() {
+// @@protoc_insertion_point(message_clear_start:msg.Body)
   _extensions_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   if (_internal_metadata_.have_unknown_fields()) {
@@ -712,7 +729,7 @@ void Body::Clear() {
 
 bool Body::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:msg.Body)
   for (;;) {
@@ -756,12 +773,13 @@ void Body::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_end:msg.Body)
 }
 
-::google::protobuf::uint8* Body::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* Body::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:msg.Body)
   // Extension range [100, 10000)
-  target = _extensions_.SerializeWithCachedSizesToArray(
-      100, 10000, target);
+  target = _extensions_.InternalSerializeWithCachedSizesToArray(
+      100, 10000, false, target);
 
   if (_internal_metadata_.have_unknown_fields()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
@@ -772,6 +790,7 @@ void Body::SerializeWithCachedSizes(
 }
 
 int Body::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:msg.Body)
   int total_size = 0;
 
   total_size += _extensions_.ByteSize();
@@ -788,19 +807,27 @@ int Body::ByteSize() const {
 }
 
 void Body::MergeFrom(const ::google::protobuf::Message& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(generalized_merge_from_start:msg.Body)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   const Body* source = 
       ::google::protobuf::internal::DynamicCastToGenerated<const Body>(
           &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:msg.Body)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:msg.Body)
     MergeFrom(*source);
   }
 }
 
 void Body::MergeFrom(const Body& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(class_specific_merge_from_start:msg.Body)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   _extensions_.MergeFrom(from._extensions_);
   if (from._internal_metadata_.have_unknown_fields()) {
     mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -808,12 +835,14 @@ void Body::MergeFrom(const Body& from) {
 }
 
 void Body::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:msg.Body)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Body::CopyFrom(const Body& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:msg.Body)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -850,10 +879,10 @@ void Body::InternalSwap(Body* other) {
 
 // ===================================================================
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Msg::kHeaderFieldNumber;
 const int Msg::kBodyFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Msg::Msg()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
@@ -919,6 +948,7 @@ Msg* Msg::New(::google::protobuf::Arena* arena) const {
 }
 
 void Msg::Clear() {
+// @@protoc_insertion_point(message_clear_start:msg.Msg)
   if (_has_bits_[0 / 32] & 3u) {
     if (has_header()) {
       if (header_ != NULL) header_->::msg::Header::Clear();
@@ -935,7 +965,7 @@ void Msg::Clear() {
 
 bool Msg::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:msg.Msg)
   for (;;) {
@@ -1012,21 +1042,22 @@ void Msg::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_end:msg.Msg)
 }
 
-::google::protobuf::uint8* Msg::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* Msg::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:msg.Msg)
   // required .msg.Header header = 1;
   if (has_header()) {
     target = ::google::protobuf::internal::WireFormatLite::
-      WriteMessageNoVirtualToArray(
-        1, *this->header_, target);
+      InternalWriteMessageNoVirtualToArray(
+        1, *this->header_, false, target);
   }
 
   // optional .msg.Body body = 2;
   if (has_body()) {
     target = ::google::protobuf::internal::WireFormatLite::
-      WriteMessageNoVirtualToArray(
-        2, *this->body_, target);
+      InternalWriteMessageNoVirtualToArray(
+        2, *this->body_, false, target);
   }
 
   if (_internal_metadata_.have_unknown_fields()) {
@@ -1038,6 +1069,7 @@ void Msg::SerializeWithCachedSizes(
 }
 
 int Msg::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:msg.Msg)
   int total_size = 0;
 
   // required .msg.Header header = 1;
@@ -1065,19 +1097,27 @@ int Msg::ByteSize() const {
 }
 
 void Msg::MergeFrom(const ::google::protobuf::Message& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(generalized_merge_from_start:msg.Msg)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   const Msg* source = 
       ::google::protobuf::internal::DynamicCastToGenerated<const Msg>(
           &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:msg.Msg)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:msg.Msg)
     MergeFrom(*source);
   }
 }
 
 void Msg::MergeFrom(const Msg& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(class_specific_merge_from_start:msg.Msg)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_header()) {
       mutable_header()->::msg::Header::MergeFrom(from.header());
@@ -1092,12 +1132,14 @@ void Msg::MergeFrom(const Msg& from) {
 }
 
 void Msg::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:msg.Msg)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void Msg::CopyFrom(const Msg& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:msg.Msg)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1165,6 +1207,7 @@ const ::msg::Header& Msg::header() const {
   return header_;
 }
 ::msg::Header* Msg::release_header() {
+  // @@protoc_insertion_point(field_release:msg.Msg.header)
   clear_has_header();
   ::msg::Header* temp = header_;
   header_ = NULL;
@@ -1208,6 +1251,7 @@ const ::msg::Body& Msg::body() const {
   return body_;
 }
 ::msg::Body* Msg::release_body() {
+  // @@protoc_insertion_point(field_release:msg.Msg.body)
   clear_has_body();
   ::msg::Body* temp = body_;
   body_ = NULL;

@@ -1,8 +1,5 @@
 #include <iostream>
-#include "base/Socket.h"
-#include "statemachine/EchoStateMachine.h"
-#include "pbout/db.pb.h"
-#include "pbout/message.pb.h"
+#include "Socket.h"
 
 using namespace std;
 
@@ -63,8 +60,7 @@ int Socket::read()
     char buf[10000];
     bzero(buf, sizeof(buf));
 
-
-    while ( (readRet = ::read(fd_, &buf[pos], 99)) > 0 )
+    while ( (readRet = ::read(fd_, &buf[pos], 1024)) > 0 )
     {
         if (readRet > 0)
         {
@@ -88,36 +84,7 @@ int Socket::read()
             continue;
     }
 
-    std::auto_ptr<msg::Msg> msg(new msg::Msg());
-    if (!msg->ParseFromArray(buf, pos))
-    {
-        cout<<"msg parse error "<<"\n";
-        return -1;
-    }
-
-    const msg::Header& header = msg->header();;
-    uint32_t msgType = header.type();
-    uint32_t smId = header.sm_id();
-    uint32_t actionId = header.action_id();
-    if (!SMFactory::getInstance().isValidSmType(msgType))
-    {
-        cout<<"Invalid msg type:"<<msgType<<"\n";
-        return 0;
-    }
-
-    static uint32_t uuid = 0;
-    StateMachineBase* pSM = SMFactory::getInstance().getSM(smId);
-    if (!pSM)
-    {
-        pSM = SMFactory::getInstance().createSM(msgType);
-        SMFactory::getInstance().addSM(++uuid, pSM); //assign an unique id;
-    }
-
-    char evDesc[100];
-    snprintf(evDesc, 100, "Message type: %d action Id %d", msgType, actionId);
-
-    Event ev(actionId, evDesc);
-    pSM->Drive(ev, this);
+    return cbRead_.func(buf, pos, this, cbRead_.pArgs);
 
     return 0;
 }
@@ -154,5 +121,4 @@ int ServerSocket::write()
     return fd_;
 }
 
-}
-}
+}}

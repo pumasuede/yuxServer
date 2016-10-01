@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
@@ -27,6 +28,7 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 }  // namespace
 
 
+void protobuf_AssignDesc_db_2eproto() GOOGLE_ATTRIBUTE_COLD;
 void protobuf_AssignDesc_db_2eproto() {
   protobuf_AddDesc_db_2eproto();
   const ::google::protobuf::FileDescriptor* file =
@@ -59,6 +61,7 @@ inline void protobuf_AssignDescriptorsOnce() {
                  &protobuf_AssignDesc_db_2eproto);
 }
 
+void protobuf_RegisterTypes(const ::std::string&) GOOGLE_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
@@ -72,6 +75,7 @@ void protobuf_ShutdownFile_db_2eproto() {
   delete InsertRequest_reflection_;
 }
 
+void protobuf_AddDesc_db_2eproto() GOOGLE_ATTRIBUTE_COLD;
 void protobuf_AddDesc_db_2eproto() {
   static bool already_here = false;
   if (already_here) return;
@@ -102,22 +106,12 @@ struct StaticDescriptorInitializer_db_2eproto {
   }
 } static_descriptor_initializer_db_2eproto_;
 
-namespace {
-
-static void MergeFromFail(int line) GOOGLE_ATTRIBUTE_COLD;
-static void MergeFromFail(int line) {
-  GOOGLE_CHECK(false) << __FILE__ << ":" << line;
-}
-
-}  // namespace
-
-
 // ===================================================================
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int InsertRequest::kKeyFieldNumber;
 const int InsertRequest::kValueFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 InsertRequest::InsertRequest()
   : ::google::protobuf::Message(), _internal_metadata_(NULL) {
@@ -182,6 +176,7 @@ InsertRequest* InsertRequest::New(::google::protobuf::Arena* arena) const {
 }
 
 void InsertRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:db.InsertRequest)
   if (_has_bits_[0 / 32] & 3u) {
     if (has_key()) {
       key_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
@@ -198,7 +193,7 @@ void InsertRequest::Clear() {
 
 bool InsertRequest::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:db.InsertRequest)
   for (;;) {
@@ -291,8 +286,9 @@ void InsertRequest::SerializeWithCachedSizes(
   // @@protoc_insertion_point(serialize_end:db.InsertRequest)
 }
 
-::google::protobuf::uint8* InsertRequest::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* InsertRequest::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:db.InsertRequest)
   // required string key = 1;
   if (has_key()) {
@@ -325,6 +321,7 @@ void InsertRequest::SerializeWithCachedSizes(
 }
 
 int InsertRequest::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:db.InsertRequest)
   int total_size = 0;
 
   if (has_key()) {
@@ -344,6 +341,7 @@ int InsertRequest::RequiredFieldsByteSizeFallback() const {
   return total_size;
 }
 int InsertRequest::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:db.InsertRequest)
   int total_size = 0;
 
   if (((_has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
@@ -372,19 +370,27 @@ int InsertRequest::ByteSize() const {
 }
 
 void InsertRequest::MergeFrom(const ::google::protobuf::Message& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(generalized_merge_from_start:db.InsertRequest)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   const InsertRequest* source = 
       ::google::protobuf::internal::DynamicCastToGenerated<const InsertRequest>(
           &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:db.InsertRequest)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:db.InsertRequest)
     MergeFrom(*source);
   }
 }
 
 void InsertRequest::MergeFrom(const InsertRequest& from) {
-  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+// @@protoc_insertion_point(class_specific_merge_from_start:db.InsertRequest)
+  if (GOOGLE_PREDICT_FALSE(&from == this)) {
+    ::google::protobuf::internal::MergeFromFail(__FILE__, __LINE__);
+  }
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_key()) {
       set_has_key();
@@ -401,12 +407,14 @@ void InsertRequest::MergeFrom(const InsertRequest& from) {
 }
 
 void InsertRequest::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:db.InsertRequest)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void InsertRequest::CopyFrom(const InsertRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:db.InsertRequest)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -481,6 +489,7 @@ void InsertRequest::clear_key() {
   return key_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
  ::std::string* InsertRequest::release_key() {
+  // @@protoc_insertion_point(field_release:db.InsertRequest.key)
   clear_has_key();
   return key_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
@@ -534,6 +543,7 @@ void InsertRequest::clear_value() {
   return value_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
  ::std::string* InsertRequest::release_value() {
+  // @@protoc_insertion_point(field_release:db.InsertRequest.value)
   clear_has_value();
   return value_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
