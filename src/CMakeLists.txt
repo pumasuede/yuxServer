@@ -11,12 +11,15 @@ IF (APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
 ENDIF()
 
+MESSAGE("GPB DIR : $ENV{GPB_DIR}")
+INCLUDE_DIRECTORIES(/usr/local/include $ENV{GPB_DIR}/include)
+LINK_DIRECTORIES(/usr/local/lib ../../install/bin $ENV{GPB_DIR}/lib)
+
 ADD_SUBDIRECTORY(pbout)
 ADD_SUBDIRECTORY(base)
 ADD_SUBDIRECTORY(statemachine)
 ADD_SUBDIRECTORY(common)
 
-LINK_DIRECTORIES(/usr/local/lib ../../install/bin)
 
 ADD_EXECUTABLE(yuxServer main.cc)
 TARGET_LINK_LIBRARIES(yuxServer Pbout Base Common StateMachine)

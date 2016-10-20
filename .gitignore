@@ -1,2 +1,6 @@
 !.gitignore
 tags
+*.pb.h
+*.pb.cc
+build
+install

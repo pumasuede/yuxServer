@@ -11,8 +11,11 @@ IF (APPLE)
 ENDIF()
 
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
-INCLUDE_DIRECTORIES(../src)
-LINK_DIRECTORIES(/usr/local/lib ../../install/bin)
+
+SET(GPB_DIR "/home/utils/protobuf-2.5.0")
+INCLUDE_DIRECTORIES(../src ${GPB_DIR}/include)
+LINK_DIRECTORIES(../../install/bin ${GPB_DIR}/lib)
+
 ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
