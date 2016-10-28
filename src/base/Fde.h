@@ -1,3 +1,6 @@
+#ifndef __YUX_FDE_H__
+#define __YUX_FDE_H__
+
 #ifdef __linux__
 #include <sys/epoll.h>
 #endif
@@ -98,3 +101,5 @@ class EpollFdes : public Fdes
 #endif
 
 }}
+
+#endif

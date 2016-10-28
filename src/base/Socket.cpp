@@ -61,8 +61,11 @@ int Socket::read()
     char buf[10000];
     bzero(buf, sizeof(buf));
 
-    while ( (readRet = ::read(fd_, &buf[pos], 1024)) > 0 )
+    cout<<"begin to read socket...\n";
+
+    while ( 1 )
     {
+        readRet = ::read(fd_, &buf[pos], 1024);
         if (readRet > 0)
         {
             pos += readRet;
@@ -74,20 +77,25 @@ int Socket::read()
             return -1;
         }
 
+        // readRet < 0 : Read Error
 
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
             //reading buffer is complete, no available data
-            cout<<"buf received: "<<pos<<"bytes\n";
+            cout<<"buf received: "<<pos<<" bytes\n";
             break;
         }
+
         if (errno == EINTR)
             continue;
+
+        // True Error
+        cout<<"read error errno"<<errno<<endl;
+        return -1;
     }
 
+    // read completed , do callback
     return cbRead_.func(buf, pos, this, cbRead_.pArgs);
-
-    return 0;
 }
 
 int Socket::write()

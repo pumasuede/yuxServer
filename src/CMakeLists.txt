@@ -12,7 +12,7 @@ IF (APPLE)
 ENDIF()
 
 MESSAGE("GPB DIR : $ENV{GPB_DIR}")
-INCLUDE_DIRECTORIES(/usr/local/include $ENV{GPB_DIR}/include)
+INCLUDE_DIRECTORIES(. /usr/local/include $ENV{GPB_DIR}/include)
 LINK_DIRECTORIES(/usr/local/lib ../../install/bin $ENV{GPB_DIR}/lib)
 
 ADD_SUBDIRECTORY(pbout)
@@ -21,7 +21,7 @@ ADD_SUBDIRECTORY(statemachine)
 ADD_SUBDIRECTORY(common)
 
 
-ADD_EXECUTABLE(yuxServer main.cc)
+ADD_EXECUTABLE(yuxServer main.cpp)
 TARGET_LINK_LIBRARIES(yuxServer Pbout Base Common StateMachine)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)

@@ -2,5 +2,6 @@
 tags
 *.pb.h
 *.pb.cc
+*.swp
 build
 install

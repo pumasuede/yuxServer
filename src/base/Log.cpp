@@ -66,6 +66,7 @@ int Logger::open(const char *filename, int level, uint64_t rotate_size){
     }else{
         fp = fopen(filename, "a");
         if(fp == NULL){
+            fprintf(stderr, "can't open file");
             return -1;
         }
 

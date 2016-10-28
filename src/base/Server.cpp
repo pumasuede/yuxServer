@@ -5,60 +5,31 @@
 #include <iostream>
 
 #include "Server.h"
-#include "../base/Socket.h"
-#include "../base/Fde.h"
-#include "../pbout/message.pb.h"
-#include "../statemachine/StateMachine.h"
+#include "Log.h"
+#include "Fde.h"
 
 using namespace std;
-using namespace yux::base;
 
 namespace yux{
-namespace common{
-
+namespace base{
 
 int Server::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
 {
-    std::auto_ptr<msg::Msg> msg(new msg::Msg());
-    if (!msg->ParseFromArray(buf, size))
-    {
-        cout<<"msg parse error "<<"\n";
-        return -1;
-    }
-
-    const msg::Header& header = msg->header();;
-    uint32_t msgType = header.type();
-    uint32_t smId = header.sm_id();
-    uint32_t actionId = header.action_id();
-    if (!SMFactory::getInstance().isValidSmType(msgType))
-    {
-        cout<<"Invalid msg type:"<<msgType<<"\n";
-        return 0;
-    }
-
-    static uint32_t uuid = 0;
-    StateMachineBase* pSM = SMFactory::getInstance().getSM(smId);
-    if (!pSM)
-    {
-        pSM = SMFactory::getInstance().createSM(msgType);
-        SMFactory::getInstance().addSM(++uuid, pSM); //assign an unique id;
-    }
-
-    char evDesc[100];
-    snprintf(evDesc, 100, "Message type: %d action Id %d", msgType, actionId);
-
-    Event ev(actionId, evDesc);
-    pSM->Drive(ev, sock);
+    buf[size] = 0;
+    cout<<"read "<<size<<" bytes:"<<buf<<endl;
+    log_debug("read %d bytes - [%s]", size, buf);
     return 1;
 }
 
-
-Server::Server(string host, uint16_t port)
+Server::Server(std::string host, uint16_t port, SocketBase::CbFun cbRead)
+: cbRead_(cbRead)
 {
+    stop_ = false;
     rlimit r;
     if (-1 == getrlimit( RLIMIT_NOFILE, &r ))
         return;
     uint32_t fdMax = r.rlim_max < 65535 && r.rlim_max > 0 ? r.rlim_max : 65535;
+    log_debug("fdMax:%d", fdMax);
 
     // Initialize all IOBaseBase * to NULL
     fdToSkt_.resize(fdMax);
@@ -70,11 +41,13 @@ Server::Server(string host, uint16_t port)
     servSock_ = new ServerSocket(host.c_str(), port);
     if (servSock_->listen() == -1)
     {
+        log_debug("Error at listening errno: %d", errno);
         cout << "Error at listening errno:"<<errno<<"\n";
         exit(-1);
     }
 
     int servFd = servSock_->fd();
+    log_debug("listen on IP: %s and Port: %d Fd: %d", servSock_->getPeer().host_.c_str(), servSock_->getPeer().port_, servFd);
     cout<<"listen on IP:"<<servSock_->getPeer().host_<<" and Port:"<<servSock_->getPeer().port_<<" Fd:"<<servFd<<"...\n";
 
     // create events;
@@ -83,6 +56,7 @@ Server::Server(string host, uint16_t port)
     #else
         fdes_ = new SelectFdes();
     #endif
+
     fdes_->create();
     fdToSkt_[servFd] = servSock_;
     fdes_->addWatch(servFd, Fde::READ);
@@ -93,7 +67,6 @@ Server::~Server()
     servSock_->close();
     delete fdes_;
 }
-
 
 void Server::loopOnce()
 {
@@ -119,7 +92,7 @@ void Server::loopOnce()
                 int newFd = newSkt->fd();
                 fdToSkt_[newFd] = newSkt;
                 fdes_->addWatch(newFd, Fde::READ);
-                newSkt->setCbRead(&Server::readCallBack, (void*)this);
+                newSkt->setCbRead(cbRead_, (void*)this);
                 cout<<"ret new socket: "<<newSkt<<" Fd:"<<newFd<<"...\n";
             }
             else
@@ -143,10 +116,17 @@ void Server::loopOnce()
     }
 }
 
+void Server::loop()
+{
+    while (!stop_)
+    {
+        loopOnce();
+    }
+}
+
 int Server::getListenFd()
 {
     return servSock_->fd();
 }
-
 
 }}

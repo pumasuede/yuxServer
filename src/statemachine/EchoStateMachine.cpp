@@ -1,5 +1,5 @@
 #include "EchoStateMachine.h"
-#include "../pbout/echo.pb.h"
+#include "pbout/echo.pb.h"
 
 SM_REG(MYID, EchoServer);
 SM_CB(EchoServer::STATE_INIT, EchoServer, Init);

@@ -10,9 +10,13 @@
 #ifdef __linux__
     #include <sys/epoll.h>
 #endif
-#include "common/Server.h"
+
+#include "base/Log.h"
+#include "base/Server.h"
+#include "common/YuxServer.h"
 
 using namespace std;
+using namespace yux::base;
 using namespace yux::common;
 
 #define DEFAUL_PORT  8000
@@ -62,9 +66,10 @@ int parse_arg(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
+    log_open("Server.log");
     parse_arg(argc, argv);
-    Server server(server_ip, server_port);
-    server.loop();
+    YuxServer mainServer(server_ip, server_port);
+    mainServer.loop();
 
     return 0;
 }
