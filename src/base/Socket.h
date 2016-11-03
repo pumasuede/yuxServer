@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <string>
 
@@ -51,6 +52,7 @@ class SocketBase
 
         virtual int read() {return 0;}
         virtual int write() = 0;
+        virtual int sendStr(char* str) { return ::write(fd_, str, strlen(str)); }
         virtual int send(uint8_t* buf, size_t size) { return ::write(fd_, buf, size); }
         virtual int recv(uint8_t* buf, size_t size) { return ::read(fd_, buf, size); }
         void close();

@@ -36,7 +36,6 @@ Server::Server(std::string host, uint16_t port, SocketBase::CbFun cbRead)
     for ( int n = 0; n < fdMax; ++n )
         fdToSkt_[n] = NULL;
 
-
     // create socket
     servSock_ = new ServerSocket(host.c_str(), port);
     if (servSock_->listen() == -1)
@@ -102,9 +101,7 @@ void Server::loopOnce()
                 if (ret < 0)
                 {
                     cout<<"abnormal in Socket read, will delete socket..\n";
-                    fdes_->delWatch(fd, Fde::READ);
-                    fdToSkt_[fd] = NULL;
-                    delete skt;
+                    closeSocket(skt);
                 }
             }
         }
@@ -114,6 +111,15 @@ void Server::loopOnce()
             fdes_->delWatch(fd, Fde::WRITE);
         }
     }
+}
+
+void Server::closeSocket(SocketBase* sock)
+{
+    int fd = sock->fd();
+    fdes_->delWatch(fd, Fde::READ);
+    fdes_->delWatch(fd, Fde::WRITE);
+    fdToSkt_[fd] = NULL;
+    delete sock;
 }
 
 void Server::loop()

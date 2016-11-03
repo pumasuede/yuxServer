@@ -22,10 +22,10 @@ class Server
         void loopOnce();
         void stop() { stop_ = true; }
         int getListenFd();
+        void closeSocket(SocketBase* sock);
 
     private:
         ServerSocket *servSock_;
-        std::vector<Socket*>  socks_;
         std::vector<SocketBase*> fdToSkt_;
         Fdes* fdes_;
         bool stop_;
