@@ -17,12 +17,13 @@ LINK_DIRECTORIES(/usr/local/lib ../../install/bin $ENV{GPB_DIR}/lib)
 
 ADD_SUBDIRECTORY(pbout)
 ADD_SUBDIRECTORY(base)
+ADD_SUBDIRECTORY(parser)
 ADD_SUBDIRECTORY(statemachine)
 ADD_SUBDIRECTORY(common)
 
 
 ADD_EXECUTABLE(yuxServer main.cpp)
-TARGET_LINK_LIBRARIES(yuxServer Pbout Base Common StateMachine)
+TARGET_LINK_LIBRARIES(yuxServer Pbout Common StateMachine)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)
 INSTALL(TARGETS yuxServer DESTINATION bin)

@@ -9,6 +9,7 @@
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::parser;
 
 namespace yux{
 namespace common{
@@ -17,9 +18,16 @@ int HttpServer::readCallBack(char* buf, size_t size, SocketBase *sock, void *pAr
 {
     buf[size]=0;
     static int n = 0;
-    n++;
+    HttpServer* pServer = static_cast<HttpServer*>(pArgs);
 
-    cout<<"[HTTP]"<<buf;
+    n++;
+    HttpRequest req;
+    if (pServer->httpParser_.parse(req, buf, size) == false)
+    {
+        cout<<"parse error";
+    }
+
+    cout<<"[RAW HTTP]:\n"<<buf;
     sock->sendStr("HTTP/1.1 200 OK\r\n");
     sock->sendStr("Connection: Kepp-Alive\r\n");
     sock->sendStr("Content-Type: text/html; charset=ISO-8859-1\r\n");
@@ -29,7 +37,6 @@ int HttpServer::readCallBack(char* buf, size_t size, SocketBase *sock, void *pAr
     sprintf(line,"Count:%d <br>\n", n);
     sock->sendStr(line);
     sock->sendStr(buf);
-    HttpServer* pServer = static_cast<HttpServer*>(pArgs);
     pServer->closeSocket(sock);
 }
 
