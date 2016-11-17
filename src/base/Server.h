@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <vector>
+#include <set>
 
 #include "Socket.h"
 
@@ -14,18 +15,18 @@ class Fdes;
 class Server
 {
     public:
-        static int readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs);
-
-        Server(std::string host, uint16_t port, SocketBase::CbFun cbRead=&readCallBack);
-        virtual ~Server();
+        static Server& getInstance();
+        void init(std::string host, uint16_t port, SocketBase::CbFun cbRead=&ServerSocket::readCallBack);
+        void addServerSocket(SocketBase* pServerSocket);
+        ~Server();
         void loop();
         void loopOnce();
         void stop() { stop_ = true; }
-        int getListenFd();
         void closeSocket(SocketBase* sock);
 
     private:
-        ServerSocket *servSock_;
+        Server() {};
+        std::set<SocketBase*> servSockList_;
         std::vector<SocketBase*> fdToSkt_;
         Fdes* fdes_;
         bool stop_;

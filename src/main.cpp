@@ -7,13 +7,11 @@
 #include <sstream>
 #include <vector>
 #include <stdlib.h>
-#ifdef __linux__
-    #include <sys/epoll.h>
-#endif
 
 #include "base/Log.h"
 #include "base/Server.h"
-#include "common/YuxServer.h"
+#include "common/YuxServerSocket.h"
+#include "common/HttpServerSocket.h"
 
 using namespace std;
 using namespace yux::base;
@@ -68,7 +66,16 @@ int main(int argc, char* argv[])
 {
     log_open("Server.log");
     parse_arg(argc, argv);
-    YuxServer mainServer(server_ip, server_port);
+
+    Server& mainServer = Server::getInstance();
+    mainServer.init(server_ip, server_port);
+
+    SocketBase* yuxServerSock = new YuxServerSocket(server_ip.c_str(), 8888);
+    mainServer.addServerSocket(yuxServerSock);
+
+    SocketBase* httpServerSock = new HttpServerSocket(server_ip.c_str(), 9999);
+    mainServer.addServerSocket(httpServerSock);
+
     mainServer.loop();
 
     return 0;

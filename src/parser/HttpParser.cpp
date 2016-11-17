@@ -9,7 +9,7 @@ namespace parser{
 bool HttpLineParser::parse(HttpRequest &req, const char *buf, uint32_t size)
 {
     std::string line(buf, size);
-    std::cout<<"htpp parse line:\n"<<line<<"\n";
+    std::cout<<"parse line:"<<line<<"\n";
     return true;
 }
 

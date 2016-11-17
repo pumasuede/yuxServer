@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <iostream>
 
-#include "YuxServer.h"
+#include "YuxServerSocket.h"
 #include "base/Log.h"
 #include "pbout/message.pb.h"
 #include "statemachine/StateMachine.h"
@@ -16,7 +16,7 @@ namespace yux{
 namespace common{
 
 
-int YuxServer::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+int YuxServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
 {
     std::auto_ptr<msg::Msg> msg(new msg::Msg());
     if (!msg->ParseFromArray(buf, size))

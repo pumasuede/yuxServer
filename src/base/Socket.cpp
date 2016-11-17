@@ -1,6 +1,7 @@
 #include <strings.h>
 #include <iostream>
 #include "Socket.h"
+#include "Log.h"
 
 using namespace std;
 
@@ -111,6 +112,14 @@ int ServerSocket::bind(const char* host, uint16_t port)
    return ::bind(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
 }
 
+int ServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+{
+    buf[size] = 0;
+    cout<<"read "<<size<<" bytes:"<<buf<<endl;
+    log_debug("read %d bytes - [%s]", size, buf);
+    return 1;
+}
+
 SocketBase* ServerSocket::accept()
 {
     sockaddr_in  clientAddr;
@@ -121,6 +130,7 @@ SocketBase* ServerSocket::accept()
 
     SocketBase *sock = new Socket(newFd, peer);
     sock->setNonBlocking();
+    sock->setCbRead(cbRead_, (void*)this);
 
     return sock;
 }

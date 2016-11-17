@@ -88,14 +88,18 @@ class Socket : public SocketBase
 class ServerSocket : public SocketBase
 {
     public:
+        static int readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs);
+
         ServerSocket() {}
-        ServerSocket(const char* host, uint16_t port) { bind(host, port); listen(); }
+        ServerSocket(const char* host, uint16_t port, SocketBase::CbFun cbRead=&readCallBack) : cbRead_(cbRead) { bind(host, port); listen(); }
         int bind(const char* host, uint16_t port);
         int listen(){ return ::listen(fd_, 0); }
         SocketBase* accept();
         int write();
     private:
         Peer self_;
+        SocketBase::CbFun cbRead_;
+        SocketBase::CbFun cbWrite_;
 };
 
 }} //namespace

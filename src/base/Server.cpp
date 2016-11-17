@@ -13,16 +13,13 @@ using namespace std;
 namespace yux{
 namespace base{
 
-int Server::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+Server& Server::getInstance()
 {
-    buf[size] = 0;
-    cout<<"read "<<size<<" bytes:"<<buf<<endl;
-    log_debug("read %d bytes - [%s]", size, buf);
-    return 1;
+    static Server server;
+    return server;
 }
 
-Server::Server(std::string host, uint16_t port, SocketBase::CbFun cbRead)
-: cbRead_(cbRead)
+void Server::init(std::string host, uint16_t port, SocketBase::CbFun cbRead)
 {
     stop_ = false;
     rlimit r;
@@ -36,19 +33,6 @@ Server::Server(std::string host, uint16_t port, SocketBase::CbFun cbRead)
     for ( int n = 0; n < fdMax; ++n )
         fdToSkt_[n] = NULL;
 
-    // create socket
-    servSock_ = new ServerSocket(host.c_str(), port);
-    if (servSock_->listen() == -1)
-    {
-        log_debug("Error at listening errno: %d", errno);
-        cout << "Error at listening errno:"<<errno<<"\n";
-        exit(-1);
-    }
-
-    int servFd = servSock_->fd();
-    log_debug("listen on IP: %s and Port: %d Fd: %d", servSock_->getPeer().host_.c_str(), servSock_->getPeer().port_, servFd);
-    cout<<"listen on IP:"<<servSock_->getPeer().host_<<" and Port:"<<servSock_->getPeer().port_<<" Fd:"<<servFd<<"...\n";
-
     // create events;
     #ifdef __linux__
         fdes_ = new EpollFdes();
@@ -57,21 +41,46 @@ Server::Server(std::string host, uint16_t port, SocketBase::CbFun cbRead)
     #endif
 
     fdes_->create();
-    fdToSkt_[servFd] = servSock_;
+
+    // create socket
+    ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, cbRead);
+
+    addServerSocket(defaultServerSock);
+}
+
+void Server::addServerSocket(SocketBase* pServerSocket)
+{
+    int servFd = pServerSocket->fd();
+    const Peer& peer = pServerSocket->getPeer();
+    log_debug("listen on IP: %s and Port: %d Fd: %d", peer.host_.c_str(), peer.port_, servFd);
+    cout<<"listen on IP:"<<peer.host_<<" and Port:"<<peer.port_<<" Fd:"<<servFd<<"...\n";
+
+    fdToSkt_[servFd] = pServerSocket;
     fdes_->addWatch(servFd, Fde::READ);
+    servSockList_.insert(pServerSocket);
 }
 
 Server::~Server()
 {
-    servSock_->close();
-    delete fdes_;
-}
+    std::set<SocketBase*>::iterator it = servSockList_.begin();
+    for (; it!=servSockList_.end(); ++it)
+    {
+        delete *it;
+    }
+
+    for (int i=0; i<fdToSkt_.size(); i++)
+    {
+        delete fdToSkt_[i];
+    }
+
+    delete fdes_;}
 
 void Server::loopOnce()
 {
     int n = fdes_->wait();
     if (n<=0)
         return;
+
     vector<Fde*>& readyFdes = fdes_->readyList();
     if (n != readyFdes.size())
     {
@@ -85,13 +94,12 @@ void Server::loopOnce()
         SocketBase *skt = fdToSkt_[fd];
         if (fde->readable())
         {
-            if (fd == servSock_->fd())
+            if (servSockList_.find(skt) != servSockList_.end())
             {
                 SocketBase *newSkt = dynamic_cast<ServerSocket*>(skt)->accept();
                 int newFd = newSkt->fd();
                 fdToSkt_[newFd] = newSkt;
                 fdes_->addWatch(newFd, Fde::READ);
-                newSkt->setCbRead(cbRead_, (void*)this);
                 cout<<"ret new socket: "<<newSkt<<" Fd:"<<newFd<<"...\n";
             }
             else
@@ -128,11 +136,6 @@ void Server::loop()
     {
         loopOnce();
     }
-}
-
-int Server::getListenFd()
-{
-    return servSock_->fd();
 }
 
 }}

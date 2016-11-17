@@ -4,7 +4,8 @@
 #include <errno.h>
 #include <iostream>
 
-#include "HttpServer.h"
+#include "HttpServerSocket.h"
+#include "base/Server.h"
 #include "base/Log.h"
 
 using namespace std;
@@ -14,15 +15,15 @@ using namespace yux::parser;
 namespace yux{
 namespace common{
 
-int HttpServer::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
 {
     buf[size]=0;
     static int n = 0;
-    HttpServer* pServer = static_cast<HttpServer*>(pArgs);
+    HttpServerSocket* pServerSock = dynamic_cast<HttpServerSocket*>(sock);
 
     n++;
     HttpRequest req;
-    if (pServer->httpParser_.parse(req, buf, size) == false)
+    if (pServerSock->httpParser_.parse(req, buf, size) == false)
     {
         cout<<"parse error";
     }
@@ -37,7 +38,7 @@ int HttpServer::readCallBack(char* buf, size_t size, SocketBase *sock, void *pAr
     sprintf(line,"Count:%d <br>\n", n);
     sock->sendStr(line);
     sock->sendStr(buf);
-    pServer->closeSocket(sock);
+    Server::getInstance().closeSocket(sock);
 }
 
 }}
