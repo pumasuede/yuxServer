@@ -15,7 +15,14 @@ using namespace yux::parser;
 namespace yux{
 namespace common{
 
-int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+HttpServerSocket* HttpServerSocket::create(const char* host, uint16_t port)
+{
+     HttpServerSocket* pSock = new HttpServerSocket(host, port);
+     pSock->setCbRead(std::tr1::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
+     return pSock;
+}
+
+int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
 {
     buf[size]=0;
     static int n = 0;
@@ -25,7 +32,8 @@ int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, voi
     HttpRequest req;
     if (pServerSock->httpParser_.parse(req, buf, size) == false)
     {
-        cout<<"parse error";
+        return -1;
+        cout<<"parse http error";
     }
 
     cout<<"[RAW HTTP]:\n"<<buf;
@@ -39,6 +47,7 @@ int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, voi
     sock->sendStr(line);
     sock->sendStr(buf);
     Server::getInstance().closeSocket(sock);
+    return 0;
 }
 
 }}

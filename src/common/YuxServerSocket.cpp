@@ -15,8 +15,14 @@ using namespace yux::base;
 namespace yux{
 namespace common{
 
+YuxServerSocket* YuxServerSocket::create(const char* host, uint16_t port)
+{
+    YuxServerSocket* pSock = new YuxServerSocket(host, port);
+    pSock->setCbRead(std::tr1::bind(&YuxServerSocket::readCallBack, pSock, _1, _2, _3));
+    return pSock;
+}
 
-int YuxServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+int YuxServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
 {
     std::auto_ptr<msg::Msg> msg(new msg::Msg());
     if (!msg->ParseFromArray(buf, size))

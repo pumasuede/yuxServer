@@ -42,6 +42,7 @@ void SelectFdes::create()
 void SelectFdes::addWatch(int fd, Fde::FdEvent event)
 {
     Fde *fde = getFde(fd);
+    fde->setEvents(fde->events()|event);
 
     if (event == Fde::READ)
     {

@@ -19,7 +19,15 @@ Server& Server::getInstance()
     return server;
 }
 
-void Server::init(std::string host, uint16_t port, SocketBase::CbFun cbRead)
+void Server::init(std::string host, uint16_t port, SocketBase::CallBack cbRead)
+{
+    // create socket
+    init();
+    ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, cbRead);
+    addServerSocket(defaultServerSock);
+}
+
+void Server::init()
 {
     stop_ = false;
     rlimit r;
@@ -41,11 +49,6 @@ void Server::init(std::string host, uint16_t port, SocketBase::CbFun cbRead)
     #endif
 
     fdes_->create();
-
-    // create socket
-    ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, cbRead);
-
-    addServerSocket(defaultServerSock);
 }
 
 void Server::addServerSocket(SocketBase* pServerSocket)
@@ -92,6 +95,8 @@ void Server::loopOnce()
         Fde *fde = readyFdes[i];
         int fd = fde->fd();
         SocketBase *skt = fdToSkt_[fd];
+        if (!skt)
+            continue;
         if (fde->readable())
         {
             if (servSockList_.find(skt) != servSockList_.end())
@@ -100,7 +105,7 @@ void Server::loopOnce()
                 int newFd = newSkt->fd();
                 fdToSkt_[newFd] = newSkt;
                 fdes_->addWatch(newFd, Fde::READ);
-                cout<<"ret new socket: "<<newSkt<<" Fd:"<<newFd<<"...\n";
+                cout<<"accept new socket - Fd:"<<newFd<<"...\n";
             }
             else
             {
@@ -108,7 +113,7 @@ void Server::loopOnce()
                 int ret = skt->read();
                 if (ret < 0)
                 {
-                    cout<<"abnormal in Socket read, will delete socket..\n";
+                    cout<<"abnormal in Socket read, will delete socket - Fd: "<<fd <<"\n";
                     closeSocket(skt);
                 }
             }
@@ -127,6 +132,7 @@ void Server::closeSocket(SocketBase* sock)
     fdes_->delWatch(fd, Fde::READ);
     fdes_->delWatch(fd, Fde::WRITE);
     fdToSkt_[fd] = NULL;
+    cout<<"deleting socket - Fd: "<<fd <<"\n";
     delete sock;
 }
 

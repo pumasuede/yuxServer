@@ -96,7 +96,7 @@ int Socket::read()
     }
 
     // read completed , do callback
-    return cbRead_.func(buf, pos, this, cbRead_.pArgs);
+    return cbRead_(buf, pos, this);
 }
 
 int Socket::write()
@@ -106,13 +106,11 @@ int Socket::write()
 
 int ServerSocket::bind(const char* host, uint16_t port)
 {
-   //cout<<"bind IP:"<<host<<" port:"<<port<<"\n";
    peer_ = Peer(host, port);
-
    return ::bind(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
 }
 
-int ServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+int ServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
 {
     buf[size] = 0;
     cout<<"read "<<size<<" bytes:"<<buf<<endl;
@@ -130,7 +128,7 @@ SocketBase* ServerSocket::accept()
 
     SocketBase *sock = new Socket(newFd, peer);
     sock->setNonBlocking();
-    sock->setCbRead(cbRead_, (void*)this);
+    sock->setCbRead(cbRead_);
 
     return sock;
 }

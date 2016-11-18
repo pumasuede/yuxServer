@@ -35,7 +35,7 @@ class Fde
         virtual bool isExcept() { return events_ | EXCEPT; }
         virtual int fd() { return fd_; }
         virtual void setEvents(int events) { events_ = events; }
-        virtual int events() {return events_;}
+        virtual int events() { return events_; }
     private:
         int events_;
         int fd_;

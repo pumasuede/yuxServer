@@ -8,7 +8,7 @@ using namespace yux::base;
 
 
 
-int readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
+int readCallBack(char* buf, size_t size, SocketBase *sock)
 {
     return 0;
 }
@@ -16,7 +16,7 @@ int readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs)
 int main(int argc, char** argv)
 {
     Socket sock;
-    sock.setCbRead(readCallBack, NULL);
+    sock.setCbRead(std::tr1::bind(&readCallBack, _1, _2, _3));
     sock.connect("127.0.0.1", 8000);
 
     Msg msg;

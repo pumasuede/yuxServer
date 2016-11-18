@@ -10,17 +10,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <tr1/functional>
 
 #include <string>
 
 #ifndef __YUX_SOCKET_H__
 #define __YUX_SOCKET_H__
 
+using namespace std::tr1::placeholders;
+
 namespace yux
 {
 namespace base
 {
-
 class Peer
 {
     public :
@@ -36,9 +38,9 @@ class Peer
 class SocketBase
 {
     public:
-        typedef int (*CbFun)(char*, size_t, SocketBase*, void*);
-        virtual void setCbRead(CbFun pCb, void* pArgs) { }
-        virtual void setCbWrite(CbFun pCb, void* pArgs) { }
+        typedef std::tr1::function<int (char*, size_t, SocketBase*)> CallBack;
+        virtual void setCbRead(CallBack cb) {}
+        virtual void setCbWrite(CallBack cb) { }
 
         SocketBase();
         SocketBase(int fd, const Peer& peer): fd_(fd), peer_(peer) {}
@@ -65,14 +67,8 @@ class SocketBase
 class Socket : public SocketBase
 {
     public:
-        // call backs must follow below definition.
-        typedef struct {
-            CbFun func;
-            void* pArgs;
-        } CallBack;
-
-        void setCbRead(CbFun pCb, void* pArgs) { cbRead_.func = pCb; cbRead_.pArgs = pArgs; }
-        void setCbWrite(CbFun pCb, void* pArgs) { cbWrite_.func = pCb; cbWrite_.pArgs = pArgs; }
+        void setCbRead(SocketBase::CallBack cb) { cbRead_ = cb; }
+        void setCbWrite(SocketBase::CallBack cb) { cbWrite_ = cb; }
 
         Socket() {}
         Socket(int fd, const Peer& peer) : SocketBase(fd, peer) {}
@@ -88,18 +84,21 @@ class Socket : public SocketBase
 class ServerSocket : public SocketBase
 {
     public:
-        static int readCallBack(char* buf, size_t size, SocketBase *sock, void *pArgs);
+        static int readCallBack(char* buf, size_t size, SocketBase *sock);
+        void setCbRead(SocketBase::CallBack cb) { cbRead_ = cb; }
+        void setCbWrite(SocketBase::CallBack cb) { cbWrite_ = cb; }
 
         ServerSocket() {}
-        ServerSocket(const char* host, uint16_t port, SocketBase::CbFun cbRead=&readCallBack) : cbRead_(cbRead) { bind(host, port); listen(); }
+        ServerSocket(const char* host, uint16_t port) { bind(host, port); listen(); }
+        ServerSocket(const char* host, uint16_t port, SocketBase::CallBack cbRead) : cbRead_(cbRead) { bind(host, port); listen(); }
         int bind(const char* host, uint16_t port);
         int listen(){ return ::listen(fd_, 0); }
         SocketBase* accept();
         int write();
     private:
         Peer self_;
-        SocketBase::CbFun cbRead_;
-        SocketBase::CbFun cbWrite_;
+        SocketBase::CallBack cbRead_;
+        SocketBase::CallBack cbWrite_;
 };
 
 }} //namespace

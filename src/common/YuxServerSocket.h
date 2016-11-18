@@ -10,8 +10,10 @@ namespace common{
 class YuxServerSocket : public yux::base::ServerSocket
 {
 public:
-    static int readCallBack(char* buf, size_t size, yux::base::SocketBase *sock, void *pArgs);
-    YuxServerSocket(const char* host, uint16_t port, yux::base::SocketBase::CbFun cbRead=&readCallBack) : ServerSocket(host, port, cbRead) {}
+    int readCallBack(char* buf, size_t size, yux::base::SocketBase *sock);
+    static YuxServerSocket* create(const char* host, uint16_t port);
+private:
+    YuxServerSocket(const char* host, uint16_t port) : ServerSocket(host, port) {}
 };
 
 }}

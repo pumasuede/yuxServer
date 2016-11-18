@@ -16,7 +16,8 @@ class Server
 {
     public:
         static Server& getInstance();
-        void init(std::string host, uint16_t port, SocketBase::CbFun cbRead=&ServerSocket::readCallBack);
+        void init(std::string host, uint16_t port, SocketBase::CallBack cbRead);
+        void init();
         void addServerSocket(SocketBase* pServerSocket);
         ~Server();
         void loop();
@@ -30,7 +31,6 @@ class Server
         std::vector<SocketBase*> fdToSkt_;
         Fdes* fdes_;
         bool stop_;
-        SocketBase::CbFun cbRead_;
 };
 
 }} //namespace

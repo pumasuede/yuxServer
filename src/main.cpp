@@ -68,12 +68,12 @@ int main(int argc, char* argv[])
     parse_arg(argc, argv);
 
     Server& mainServer = Server::getInstance();
-    mainServer.init(server_ip, server_port);
+    mainServer.init();
 
-    SocketBase* yuxServerSock = new YuxServerSocket(server_ip.c_str(), 8888);
+    SocketBase* yuxServerSock = YuxServerSocket::create(server_ip.c_str(), 8888);
     mainServer.addServerSocket(yuxServerSock);
 
-    SocketBase* httpServerSock = new HttpServerSocket(server_ip.c_str(), 9999);
+    SocketBase* httpServerSock = HttpServerSocket::create(server_ip.c_str(), 9999);
     mainServer.addServerSocket(httpServerSock);
 
     mainServer.loop();
