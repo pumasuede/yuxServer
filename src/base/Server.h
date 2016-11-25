@@ -16,13 +16,13 @@ class Server
 {
     public:
         static Server& getInstance();
+        ~Server();
         void init(std::string host, uint16_t port, SocketBase::CallBack cbRead);
         void init();
-        void addServerSocket(SocketBase* pServerSocket);
-        ~Server();
         void loop();
         void loopOnce();
         void stop() { stop_ = true; }
+        void addServerSocket(SocketBase* pServerSocket);
         void closeSocket(SocketBase* sock);
 
     private:

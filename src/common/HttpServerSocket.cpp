@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <iostream>
+#include <fstream>
 
 #include "HttpServerSocket.h"
 #include "base/Server.h"
@@ -11,6 +12,8 @@
 using namespace std;
 using namespace yux::base;
 using namespace yux::parser;
+
+const string docRoot = ".";
 
 namespace yux{
 namespace common{
@@ -41,11 +44,24 @@ int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
     sock->sendStr("Connection: Kepp-Alive\r\n");
     sock->sendStr("Content-Type: text/html; charset=ISO-8859-1\r\n");
     sock->sendStr("Server: Yux httpd\r\n\r\n");
-    sock->sendStr("<h1>Hello World</h1>");
-    char line[1000];
-    sprintf(line,"Count:%d <br>\n", n);
-    sock->sendStr(line);
-    sock->sendStr(buf);
+
+    string localFile = docRoot + req.URI;
+
+    string line;
+    ifstream file(localFile.c_str());
+    if (file.is_open())
+    {
+        while (getline(file,line))
+        {
+            sock->sendStr(line);
+        }
+        file.close();
+    }
+    else
+    {
+        sock->sendStr("Can't find Request URL "+req.URI+" !<br>\n");
+    }
+
     Server::getInstance().closeSocket(sock);
     return 0;
 }

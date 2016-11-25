@@ -50,5 +50,4 @@ class HttpRequestParser
 };
 
 }} //name space
-
 #endif
