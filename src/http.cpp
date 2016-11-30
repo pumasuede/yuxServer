@@ -17,7 +17,7 @@ using namespace std;
 using namespace yux::base;
 using namespace yux::common;
 
-#define DEFAUL_PORT  8000
+#define DEFAUL_PORT  8080
 string server_ip = "0.0.0.0";
 uint16_t server_port = DEFAUL_PORT;
 
@@ -64,17 +64,14 @@ int parse_arg(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-    log_open("Server.log");
+    log_open("httpd.log");
     parse_arg(argc, argv);
 
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    SocketBase* yuxServerSock = YuxServerSocket::create(server_ip.c_str(), 8888);
-    mainServer.addServerSocket(yuxServerSock);
-
-    //SocketBase* httpServerSock = HttpServerSocket::create(server_ip.c_str(), 9999);
-    //mainServer.addServerSocket(httpServerSock);
+    SocketBase* httpServerSock = HttpServerSocket::create(server_ip, server_port);
+    mainServer.addServerSocket(httpServerSock);
 
     mainServer.loop();
 

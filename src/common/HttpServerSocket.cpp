@@ -13,16 +13,19 @@ using namespace std;
 using namespace yux::base;
 using namespace yux::parser;
 
-const string docRoot = ".";
-
 namespace yux{
 namespace common{
 
-HttpServerSocket* HttpServerSocket::create(const char* host, uint16_t port)
+HttpServerSocket* HttpServerSocket::create(const std::string& host, uint16_t port)
 {
      HttpServerSocket* pSock = new HttpServerSocket(host, port);
      pSock->setCbRead(std::tr1::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
      return pSock;
+}
+
+void HttpServerSocket::setDocRoot(const string& docRoot)
+{
+    docRoot_ = docRoot;
 }
 
 int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
@@ -42,10 +45,10 @@ int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
     cout<<"[RAW HTTP]:\n"<<buf;
     sock->sendStr("HTTP/1.1 200 OK\r\n");
     sock->sendStr("Connection: Kepp-Alive\r\n");
-    sock->sendStr("Content-Type: text/html; charset=ISO-8859-1\r\n");
-    sock->sendStr("Server: Yux httpd\r\n\r\n");
+    sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");
+    sock->sendStr("Server: yuhttpd\r\n\r\n");
 
-    string localFile = docRoot + req.URI;
+    string localFile = docRoot_ + req.URI;
 
     string line;
     ifstream file(localFile.c_str());

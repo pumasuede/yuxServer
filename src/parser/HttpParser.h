@@ -1,6 +1,7 @@
 #ifndef HTTP_PARSER_H__
 #define HTTP_PARSER_H__
 
+#include <stdint.h>
 #include <string>
 #include <map>
 
