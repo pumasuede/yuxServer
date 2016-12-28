@@ -1,6 +1,3 @@
-#ifndef UTIL_LOG_H
-#define UTIL_LOG_H
-
 #include <inttypes.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -10,6 +7,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <string.h>
+#include <string>
 #include <math.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -20,7 +18,10 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
-class Logger{
+#ifndef _YUX_LOG_H__
+#define _YUX_LOG_H__
+class Logger
+{
     public:
         enum LogLevel
         {
@@ -35,36 +36,31 @@ class Logger{
             LEVEL_MAX     = 5,
         };
 
-        static int get_level(const char *levelname);
+        static Logger& instance();
+        static int getLevel(const std::string& levelname);
+
     private:
-        FILE *fp;
-        char filename[PATH_MAX];
+        int fd_;
+        std::string filename_;
         int level_;
         pthread_mutex_t mutex_;
 
-        uint64_t rotate_size;
+        uint64_t rotateSize_;
         struct{
             uint64_t w_curr;
             uint64_t w_total;
-        }stats;
+        } stats_;
 
+        Logger();
         void rotate();
     public:
-        Logger();
         ~Logger();
 
-        static Logger logger_;
+        int level() { return level_; }
+        void set_level(int level) { level_ = level;}
 
-        int level(){
-            return level_;
-        }
-
-        void set_level(int level){
-            this->level_ = level;
-        }
-
-        int open(FILE *fp, int level=LEVEL_DEBUG);
-        int open(const char *filename, int level=LEVEL_DEBUG, uint64_t rotate_size=0);
+        int open(int fd, int level=LEVEL_DEBUG);
+        int open(const std::string& filename, int level=LEVEL_DEBUG, uint64_t rotate_size=0);
         void close();
 
         int logv(int level, const char *fmt, va_list ap);
@@ -78,12 +74,13 @@ class Logger{
 };
 
 
-int log_open(FILE *fp, int level=Logger::LEVEL_DEBUG);
-int log_open(const char *filename, int level=Logger::LEVEL_DEBUG, uint64_t rotate_size=0);
-int log_level();
-void set_log_level(int level);
-int log_write(int level, const char *fmt, ...);
+inline int log_open(int fd, int level=Logger::LEVEL_DEBUG) { return Logger::instance().open(fd, level); }
+inline int log_open(const char *filename, int level=Logger::LEVEL_DEBUG, uint64_t rotateSize=0) { return Logger::instance().open(filename, level, rotateSize); }
 
+inline int log_level() { return Logger::instance().level(); }
+inline void set_log_level(int level) { Logger::instance().set_level(level); }
+
+int log_write(int level, const char *fmt, ...);
 
 #ifdef NDEBUG
 #define log_trace(fmt, args...) do{}while(0)
@@ -102,4 +99,5 @@ int log_write(int level, const char *fmt, ...);
     log_write(Logger::LEVEL_ERROR, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
 #define log_fatal(fmt, args...)	\
     log_write(Logger::LEVEL_FATAL, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
+
 #endif

@@ -42,7 +42,7 @@ int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
         cout<<"parse http error";
     }
 
-    cout<<"[RAW HTTP]:\n"<<buf;
+    log_debug("[RAW HTTP]:%s\n", buf);
     sock->sendStr("HTTP/1.1 200 OK\r\n");
     sock->sendStr("Connection: Kepp-Alive\r\n");
     sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");

@@ -19,5 +19,8 @@ LINK_DIRECTORIES(../../install/bin ${GPB_DIR}/lib)
 ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
+ADD_EXECUTABLE(Test Test.cpp)
+TARGET_LINK_LIBRARIES(Test Base)
+
 SET(CMAKE_INSTALL_PREFIX ../../install)
-INSTALL(TARGETS TestClient DESTINATION bin)
+INSTALL(TARGETS TestClient Test DESTINATION bin)

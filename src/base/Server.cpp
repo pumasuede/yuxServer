@@ -76,7 +76,8 @@ Server::~Server()
         delete fdToSkt_[i];
     }
 
-    delete fdes_;}
+    delete fdes_;
+}
 
 void Server::loopOnce()
 {

@@ -1,144 +1,158 @@
 #include "Log.h"
 
-Logger Logger::logger_;
-
-int log_open(FILE *fp, int level ){
-    return Logger::logger_.open(fp, level);
+Logger& Logger::instance()
+{
+    static Logger logger;
+    return logger;
 }
 
-int log_open(const char *filename, int level, uint64_t rotate_size){
-    return Logger::logger_.open(filename, level, rotate_size);
-}
-
-int log_level(){
-    return Logger::logger_.level();
-}
-
-void set_log_level(int level){
-    Logger::logger_.set_level(level);
-}
-
-int log_write(int level, const char *fmt, ...){
+int log_write(int level, const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = Logger::logger_.logv(level, fmt, ap);
+    int ret = Logger::instance().logv(level, fmt, ap);
     va_end(ap);
     return ret;
 }
 
-/*****/
-
-Logger::Logger(){
-    fp = stdout;
-    level_ = LEVEL_DEBUG;
-
-    filename[0] = '\0';
-    rotate_size = 0;
-    stats.w_curr = 0;
-    stats.w_total = 0;
+Logger::Logger() : fd_(-1), level_(LEVEL_DEBUG), rotateSize_(0)
+{
+    stats_.w_curr = 0;
+    stats_.w_total = 0;
     pthread_mutex_init(&mutex_, NULL);
 }
 
-Logger::~Logger(){
+Logger::~Logger()
+{
     pthread_mutex_destroy(&mutex_);
-    this->close();
+    ::close(fd_);
 }
 
-int Logger::open(FILE *fp, int level){
-    this->fp = fp;
-    this->level_ = level;
+int Logger::open(int fd, int level)
+{
+    fd_ = fd;
+    level_ = level;
+
+    struct stat st;
+    int ret = fstat(fd_, &st);
+    if (ret == -1)
+    {
+        fprintf(stderr, "fstat log file %s error!", filename_.c_str());
+        return -1;
+    }
+
+    stats_.w_curr = st.st_size;
 
     return 0;
 }
 
-int Logger::open(const char *filename, int level, uint64_t rotate_size){
-    if(strlen(filename) > PATH_MAX - 20){
+int Logger::open(const std::string& filename, int level, uint64_t rotateSize)
+{
+    if (filename.size() > PATH_MAX - 20)
+    {
         fprintf(stderr, "log filename too long!");
         return -1;
     }
-    strcpy(this->filename, filename);
 
-    FILE *fp;
-    if(strcmp(filename, "stdout") == 0){
-        fp = stdout;
-    }else if(strcmp(filename, "stderr") == 0){
-        fp = stderr;
-    }else{
-        fp = fopen(filename, "a");
-        if(fp == NULL){
-            fprintf(stderr, "can't open file");
-            return -1;
-        }
+    filename_ = filename;
+    rotateSize_ = rotateSize;
 
-        struct stat st;
-        int ret = fstat(fileno(fp), &st);
-        if(ret == -1){
-            fprintf(stderr, "fstat log file %s error!", filename);
+    int fd;
+
+    if (filename == "stdout")
+    {
+        fd = 1;
+    }
+    else if (filename == "stderr")
+    {
+        fd = 2;
+    }
+    else
+    {
+        fd = ::open(filename_.c_str(), O_RDWR|O_APPEND);
+        if (fd == -1)
+        {
+            fprintf(stderr, "can't open log file:%s\n", filename_.c_str());
             return -1;
-        }else{
-            this->rotate_size = rotate_size;
-            stats.w_curr = st.st_size;
         }
     }
-    return this->open(fp, level);
+
+    return open(fd, level);
 }
 
 void Logger::close(){
-    if(fp != stdin && fp != stdout){
-        fclose(fp);
-    }
+     ::close(fd_);
 }
 
-void Logger::rotate(){
-    fclose(fp);
-    char newpath[PATH_MAX];
+void Logger::rotate()
+{
+    ::close(fd_);
+    char newPath[PATH_MAX];
     time_t time;
     struct timeval tv;
     struct tm *tm;
+
     gettimeofday(&tv, NULL);
     time = tv.tv_sec;
     tm = localtime(&time);
-    sprintf(newpath, "%s.%04d%02d%02d-%02d:%02d:%02d-%d",
-            this->filename,
+    sprintf(newPath, "%s.%04d%02d%02d-%02d:%02d:%02d-%d",
+            filename_.c_str(),
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
             tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec);
+    printf("rename %s => %s\n", filename_.c_str(), newPath);
 
-    printf("rename %s => %s\n", this->filename, newpath);
-    int ret = rename(this->filename, newpath);
-    if(ret == -1){
-        fprintf(stderr, "rename %s error!", filename);
+    int ret = rename(filename_.c_str(), newPath);
+    if(ret == -1)
+    {
+        fprintf(stderr, "rename %s error!", filename_.c_str());
         return;
     }
-    fp = fopen(this->filename, "a");
-    if(fp == NULL){
+
+    fd_ = ::open(filename_.c_str(), O_RDWR|O_APPEND);
+    if (fd_ = -1)
+    {
         return;
     }
-    stats.w_curr = 0;
+    stats_.w_curr = 0;
 }
 
-int Logger::get_level(const char *levelname){
-    if(strcmp("trace", levelname) == 0){
+int Logger::getLevel(const std::string& levelname)
+{
+    if (levelname == "trace")
+    {
         return LEVEL_TRACE;
     }
-    if(strcmp("debug", levelname) == 0){
+
+    if (levelname == "debug")
+    {
         return LEVEL_DEBUG;
     }
-    if(strcmp("info", levelname) == 0){
+
+    if (levelname == "info")
+    {
         return LEVEL_INFO;
     }
-    if(strcmp("warn", levelname) == 0){
-        return LEVEL_WARN;
-    }
-    if(strcmp("error", levelname) == 0){
+
+    if (levelname == "error")
+    {
         return LEVEL_ERROR;
     }
-    if(strcmp("fatal", levelname) == 0){
+
+    if (levelname == "fatal")
+    {
         return LEVEL_FATAL;
     }
+
+    if (levelname == "warn")
+    {
+        return LEVEL_WARN;
+    }
+
     return LEVEL_DEBUG;
 }
 
-inline static const char* level_name(int level){
+inline static const char* level_name(int level)
+{
     switch(level){
         case Logger::LEVEL_FATAL:
             return "[FATAL] ";
@@ -161,7 +175,8 @@ inline static const char* level_name(int level){
 
 int Logger::logv(int level, const char *fmt, va_list ap)
 {
-    if(logger_.level_ < level){
+    if (level_ < level)
+    {
         return 0;
     }
 
@@ -179,7 +194,8 @@ int Logger::logv(int level, const char *fmt, va_list ap)
     len = sprintf(ptr, "%04d-%02d-%02d %02d:%02d:%02d.%03d ",
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
             tm->tm_hour, tm->tm_min, tm->tm_sec, (int)(tv.tv_usec/1000));
-    if(len < 0){
+    if (len < 0)
+    {
         return -1;
     }
     ptr += len;
@@ -189,7 +205,8 @@ int Logger::logv(int level, const char *fmt, va_list ap)
 
     int space = sizeof(buf) - (ptr - buf) - 10;
     len = vsnprintf(ptr, space, fmt, ap);
-    if(len < 0){
+    if(len < 0)
+    {
         return -1;
     }
     ptr += len > space? space : len;
@@ -197,23 +214,21 @@ int Logger::logv(int level, const char *fmt, va_list ap)
     *ptr = '\0';
 
     len = ptr - buf;
-    // change to write(), without locking?
-    fwrite(buf, len, 1, this->fp);
-    fflush(this->fp);
+    ::write(fd_, buf, len);
 
-    stats.w_curr += len;
-    stats.w_total += len;
+    stats_.w_curr += len;
+    stats_.w_total += len;
 
-    if (rotate_size > 0)
+    if (rotateSize_ > 0)
     {
-        pthread_mutex_lock(&mutex_);
-        if( stats.w_curr > rotate_size)
+        if( stats_.w_curr > rotateSize_)
         {
             const char *p = "begin to rotate";
-            fwrite(p, strlen(p), 1, this->fp);
+            ::write(fd_, p, strlen(p));
+            pthread_mutex_lock(&mutex_);
             rotate();
+            pthread_mutex_unlock(&mutex_);
         }
-        pthread_mutex_unlock(&mutex_);
 
         return len;
     }
@@ -221,50 +236,56 @@ int Logger::logv(int level, const char *fmt, va_list ap)
     return 0;
 }
 
-int Logger::trace(const char *fmt, ...){
+int Logger::trace(const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = logger_.logv(Logger::LEVEL_TRACE, fmt, ap);
+    int ret = logv(Logger::LEVEL_TRACE, fmt, ap);
     va_end(ap);
     return ret;
 }
 
-int Logger::debug(const char *fmt, ...){
+int Logger::debug(const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = logger_.logv(Logger::LEVEL_DEBUG, fmt, ap);
+    int ret = logv(Logger::LEVEL_DEBUG, fmt, ap);
     va_end(ap);
     return ret;
 }
 
-int Logger::info(const char *fmt, ...){
+int Logger::info(const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = logger_.logv(Logger::LEVEL_INFO, fmt, ap);
+    int ret = logv(Logger::LEVEL_INFO, fmt, ap);
     va_end(ap);
     return ret;
 }
 
-int Logger::warn(const char *fmt, ...){
+int Logger::warn(const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = logger_.logv(Logger::LEVEL_WARN, fmt, ap);
+    int ret = logv(Logger::LEVEL_WARN, fmt, ap);
     va_end(ap);
     return ret;
 }
 
-int Logger::error(const char *fmt, ...){
+int Logger::error(const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = logger_.logv(Logger::LEVEL_ERROR, fmt, ap);
+    int ret = logv(Logger::LEVEL_ERROR, fmt, ap);
     va_end(ap);
     return ret;
 }
 
-int Logger::fatal(const char *fmt, ...){
+int Logger::fatal(const char *fmt, ...)
+{
     va_list ap;
     va_start(ap, fmt);
-    int ret = logger_.logv(Logger::LEVEL_FATAL, fmt, ap);
+    int ret = logv(Logger::LEVEL_FATAL, fmt, ap);
     va_end(ap);
     return ret;
 }
