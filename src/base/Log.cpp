@@ -67,14 +67,19 @@ int Logger::open(const std::string& filename, int level, uint64_t rotateSize)
     {
         fd = 2;
     }
-    else
+    else if (access(filename.c_str(), F_OK) != -1)
     {
         fd = ::open(filename_.c_str(), O_RDWR|O_APPEND);
-        if (fd == -1)
-        {
-            fprintf(stderr, "can't open log file:%s\n", filename_.c_str());
-            return -1;
-        }
+    }
+    else
+    {
+        fd = ::open(filename_.c_str(), O_RDWR|O_CREAT, 0755);
+    }
+
+    if (fd == -1)
+    {
+        fprintf(stderr, "Can't open log file:%s\n", filename_.c_str());
+        return -1;
     }
 
     return open(fd, level);

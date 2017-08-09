@@ -12,7 +12,6 @@ ENDIF()
 
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 
-SET(GPB_DIR "/home/utils/protobuf-2.5.0")
 INCLUDE_DIRECTORIES(../src ${GPB_DIR}/include)
 LINK_DIRECTORIES(../../install/bin ${GPB_DIR}/lib)
 

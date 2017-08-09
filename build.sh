@@ -1,8 +1,7 @@
 #!/bin/bash --login
 
 cd `dirname $0`
-shopt -s  expand_aliases
-shopt expand_aliases
+shopt -s expand_aliases
 gpb_info=`type protoc`
 
 [ $? -eq 1 ] && { echo >&2 "protoc does not exist, please install it. Aborting."; exit 1; }

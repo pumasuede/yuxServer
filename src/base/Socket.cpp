@@ -107,7 +107,15 @@ int Socket::write()
 int ServerSocket::bind(const char* host, uint16_t port)
 {
    peer_ = Peer(host, port);
-   return ::bind(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
+   int rc = ::bind(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
+
+   if (rc == -1)
+   {
+       std::cout<<"Socket bind failed on port "<<port<<" : "<<strerror(errno) <<"\n";
+       throw strerror(errno);
+   }
+
+   return rc;
 }
 
 int ServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
