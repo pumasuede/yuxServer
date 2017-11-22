@@ -24,8 +24,8 @@ uint16_t server_port = DEFAUL_PORT;
 void print_help(const char* name)
 {
     cout<<"Usage: "<<name<<" -ap \n";
-    cout<<"--ip  Server IP\n";
-    cout<<"--port  Server port\n";
+    cout<<"-a --ip  Server IP\n";
+    cout<<"-p --port  Server port\n";
 }
 
 int parse_arg(int argc, char* argv[])
@@ -42,7 +42,7 @@ int parse_arg(int argc, char* argv[])
     while (1)
     {
         int idx = 0;
-        c = getopt_long( argc, argv, "a:p:", long_opts, &idx);
+        c = getopt_long(argc, argv, "a:p:", long_opts, &idx);
         if (c<0)
             break;
         switch ( c )

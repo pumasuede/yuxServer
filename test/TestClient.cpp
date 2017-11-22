@@ -8,7 +8,7 @@ using namespace yux::base;
 
 
 
-int readCallBack(char* buf, size_t size, SocketBase *sock)
+int readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     return 0;
 }

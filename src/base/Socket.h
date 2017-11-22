@@ -38,7 +38,7 @@ class Peer
 class SocketBase
 {
     public:
-        typedef std::tr1::function<int (char*, size_t, SocketBase*)> CallBack;
+        typedef std::tr1::function<int (const char*, size_t, SocketBase*)> CallBack;
         virtual void setCbRead(CallBack cb) {}
         virtual void setCbWrite(CallBack cb) { }
 
@@ -61,7 +61,9 @@ class SocketBase
         void close();
 
     protected:
+        #define BUF_SIZE 4096
         int fd_;
+        char rdBuf_[BUF_SIZE];
         Peer peer_;
 };
 

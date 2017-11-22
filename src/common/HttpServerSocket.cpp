@@ -28,21 +28,31 @@ void HttpServerSocket::setDocRoot(const string& docRoot)
     docRoot_ = docRoot;
 }
 
-int HttpServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
+int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
-    buf[size]=0;
+    string tmpData(buf, size);
+    log_debug("\n[RAW HTTP]:%s\n", tmpData.c_str());
+    recvData_ += string(buf, size);
+    if (tmpData.find("\r\n\r\n") == string::npos)
+    {
+        log_debug("Wait for more data");
+        return 0;
+    }
+
     static int n = 0;
     HttpServerSocket* pServerSock = dynamic_cast<HttpServerSocket*>(sock);
 
     n++;
     HttpRequest req;
-    if (pServerSock->httpParser_.parse(req, buf, size) == false)
+    bool parseRet = pServerSock->httpParser_.parse(req, recvData_.c_str(), recvData_.size());
+
+    recvData_.clear();
+    if (!parseRet)
     {
         return -1;
-        cout<<"parse http error";
+        log_debug("parse http error");
     }
 
-    log_debug("[RAW HTTP]:%s\n", buf);
     sock->sendStr("HTTP/1.1 200 OK\r\n");
     sock->sendStr("Connection: Kepp-Alive\r\n");
     sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");

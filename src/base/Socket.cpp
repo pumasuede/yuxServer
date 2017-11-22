@@ -59,14 +59,14 @@ int Socket::read()
     // data
     int readRet = 0, pos = 0;
 
-    char buf[10000];
-    bzero(buf, sizeof(buf));
+    bzero(rdBuf_, sizeof(rdBuf_));
 
-    cout<<"begin to read socket...\n";
+    cout<<"About to read socket...\n";
+    int tmpSize = BUF_SIZE < 1024 ? BUF_SIZE : 1024;
 
-    while ( 1 )
+    while ( pos <= BUF_SIZE - tmpSize )
     {
-        readRet = ::read(fd_, &buf[pos], 1024);
+        readRet = ::read(fd_, &rdBuf_[pos], tmpSize);
         if (readRet > 0)
         {
             pos += readRet;
@@ -78,25 +78,31 @@ int Socket::read()
             return -1;
         }
 
-        // readRet < 0 : Read Error
+        // readRet < 0 : Handle read error
 
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
-            //reading buffer is complete, no available data
-            cout<<"buf received: "<<pos<<" bytes\n";
+            // Reading buffer is complete, no available data
+            log_debug("errno == EAGAIN when reading socket buffer - all available data is read");
             break;
         }
-
-        if (errno == EINTR)
+        else if (errno == EINTR)
+        {
+            log_debug("errno == EINTR when reading socket buffer");
             continue;
-
-        // True Error
-        cout<<"read error errno"<<errno<<endl;
-        return -1;
+        }
+        else
+        {
+            // True Error
+            cout<<"Error when reading socket buffer! errno="<<errno<<endl;
+            return -1;
+        }
     }
 
     // read completed , do callback
-    return cbRead_(buf, pos, this);
+    log_debug("Buf received:%d bytes", pos);
+    cout<<"->Buf received: "<<pos<<" bytes\n";
+    return cbRead_(rdBuf_, pos, this);
 }
 
 int Socket::write()
@@ -120,7 +126,7 @@ int ServerSocket::bind(const char* host, uint16_t port)
 
 int ServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
 {
-    buf[size] = 0;
+    string recvBuf(buf, size);
     cout<<"read "<<size<<" bytes:"<<buf<<endl;
     log_debug("read %d bytes - [%s]", size, buf);
     return 1;

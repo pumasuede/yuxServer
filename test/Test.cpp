@@ -5,10 +5,10 @@
 using namespace std;
 using namespace yux::base;
 
-int readCallBack(char* buf, size_t size, SocketBase *sock)
+int readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
-    buf[size] = 0;
-    std::cout<<buf<<"\n";
+    string data(buf, size);
+    std::cout<<data<<"\n";
     return 0;
 }
 

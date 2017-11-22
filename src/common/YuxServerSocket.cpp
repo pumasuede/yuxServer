@@ -22,7 +22,7 @@ YuxServerSocket* YuxServerSocket::create(const char* host, uint16_t port)
     return pSock;
 }
 
-int YuxServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
+int YuxServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     std::auto_ptr<msg::Msg> msg(new msg::Msg());
     if (!msg->ParseFromArray(buf, size))
