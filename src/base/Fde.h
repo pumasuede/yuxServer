@@ -28,16 +28,19 @@ class Fde
             EXCEPT = 1<<2
         } FdEvent;
 
-        Fde() : fd_(0), events_(NONE) {}
-        Fde(int fd, int events) : fd_(fd), events_(events) {}
-        virtual bool readable() { return events_ | READ; }
-        virtual bool writable() { return events_ | WRITE; }
-        virtual bool isExcept() { return events_ | EXCEPT; }
+        Fde() : fd_(0), events_(NONE), watchEvents_(NONE) {}
+        Fde(int fd, int events, int watchEvents) : fd_(fd), events_(events), watchEvents_(watchEvents) {}
+        virtual bool readable() { return events_ & READ; }
+        virtual bool writable() { return events_ & WRITE; }
+        virtual bool isExcept() { return events_ & EXCEPT; }
         virtual int fd() { return fd_; }
         virtual void setEvents(int events) { events_ = events; }
         virtual int events() { return events_; }
+        virtual int watchEvents() { return watchEvents_; }
+        virtual void setWatchEvents(int events) { watchEvents_ = events; }
     private:
         int events_;
+        int watchEvents_;
         int fd_;
 };
 

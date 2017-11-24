@@ -57,7 +57,8 @@ int Socket::connect()
 int Socket::read()
 {
     // data
-    int readRet = 0, pos = 0;
+    int readBytes = 0, pos = 0;
+    bool closed = false;
 
     bzero(rdBuf_, sizeof(rdBuf_));
 
@@ -66,16 +67,17 @@ int Socket::read()
 
     while ( pos <= BUF_SIZE - tmpSize )
     {
-        readRet = ::read(fd_, &rdBuf_[pos], tmpSize);
-        if (readRet > 0)
+        readBytes = ::read(fd_, &rdBuf_[pos], tmpSize);
+        if (readBytes > 0)
         {
-            pos += readRet;
+            pos += readBytes;
             continue;
         }
-        else if (readRet == 0)
+        else if (readBytes == 0)
         {
             cout<<"The socket is closed by remote peer\n";
-            return -1;
+            closed = true;
+            break;
         }
 
         // readRet < 0 : Handle read error
@@ -102,7 +104,9 @@ int Socket::read()
     // read completed , do callback
     log_debug("Buf received:%d bytes", pos);
     cout<<"->Buf received: "<<pos<<" bytes\n";
-    return cbRead_(rdBuf_, pos, this);
+
+    int ret = cbRead_(rdBuf_, pos, this);
+    return closed ? -1 : ret;
 }
 
 int Socket::write()

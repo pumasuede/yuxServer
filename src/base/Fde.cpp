@@ -10,7 +10,7 @@ Fde* Fdes::getFde(int fd)
 {
     while (fdeList_.size() <= fd)
     {
-        Fde *fde = new Fde(fdeList_.size(), Fde::NONE);
+        Fde *fde = new Fde(fdeList_.size(), Fde::NONE, Fde::NONE);
         fdeList_.push_back(fde);
     }
     return fdeList_[fd];
@@ -42,13 +42,14 @@ void SelectFdes::create()
 void SelectFdes::addWatch(int fd, Fde::FdEvent event)
 {
     Fde *fde = getFde(fd);
-    fde->setEvents(fde->events()|event);
+    int watchEvents = fde->watchEvents();
+    watchEvents |= event;
 
-    if (event == Fde::READ)
+    if (watchEvents & Fde::READ)
     {
         FD_SET(fd, &rfds_);
     }
-    if (event == Fde::WRITE)
+    if (watchEvents & Fde::WRITE)
     {
         FD_SET(fd, &wfds_);
     }
@@ -57,19 +58,22 @@ void SelectFdes::addWatch(int fd, Fde::FdEvent event)
     {
         maxFd_ = fd;
     }
+
+    fde->setWatchEvents(watchEvents);
 }
 
 void SelectFdes::delWatch(int fd, Fde::FdEvent event)
 {
     Fde *fde = getFde(fd);
-    fde->setEvents(Fde::NONE);
+    int watchEvents = fde->watchEvents();
+    watchEvents &= ~event;
 
-    if (event == Fde::READ)
+    if (!watchEvents & Fde::READ)
     {
         FD_CLR(fd, &rfds_);
     }
 
-    if (event == Fde::WRITE)
+    if (!watchEvents & Fde::WRITE)
     {
         FD_CLR(fd, &wfds_);
     }
@@ -81,6 +85,7 @@ void SelectFdes::delWatch(int fd, Fde::FdEvent event)
     }
 
     maxFd_ = n;
+    fde->setWatchEvents(watchEvents);
 }
 
 int SelectFdes::wait()
@@ -90,6 +95,7 @@ int SelectFdes::wait()
     fd_set efds = efds_;
 
     int n = select(maxFd_+1, &rfds, &wfds, &efds, 0);
+
     if (n<0)
         std::cout<<"Error at select: "<<errno<<"\n";
 
@@ -118,6 +124,7 @@ int SelectFdes::wait()
 
     return n;
 }
+
 //Epoll
 #ifdef __linux__
 
@@ -134,24 +141,47 @@ void EpollFdes::create()
 void EpollFdes::addWatch(int fd, Fde::FdEvent event)
 {
     Fde *fde = getFde(fd);
-    fde->setEvents(Fde::NONE);
+    int watchEvents = fde->watchEvents();
+    int op = watchEvents == Fde::NONE ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 
-    struct epoll_event ee = { 0 };
-    ee.events = (event = Fde::READ) ? EPOLLIN : EPOLLOUT;
+    watchEvents |= event;
+    struct epoll_event ee = {0};
+    ee.events = 0;
+
+    if (watchEvents & Fde::READ)
+    {
+         ee.events |= EPOLLIN;
+    }
+    if (watchEvents & Fde::WRITE)
+    {
+        ee.events |= EPOLLOUT;
+    }
     ee.data.fd  = fd;
-    epoll_ctl(epollFd_, EPOLL_CTL_ADD, fd, &ee);
+    epoll_ctl(epollFd_, op, fd, &ee);
+
+    fde->setWatchEvents(watchEvents);
 }
 
 void EpollFdes::delWatch(int fd, Fde::FdEvent event)
 {
     Fde *fde = getFde(fd);
-    fde->setEvents(Fde::NONE);
+    int watchEvents = fde->watchEvents();
+    watchEvents &= ~event;
+    int op = watchEvents == Fde::NONE ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
 
     struct epoll_event ee = { 0 };
-    ee.events = (event == Fde::READ) ? EPOLLIN : EPOLLOUT;
+    if (event & Fde::READ)
+    {
+        ee.events |= EPOLLIN;
+    }
+    if (event & Fde::WRITE)
+    {
+        ee.events |= EPOLLOUT;
+    }
     ee.data.fd  = fd;
 
-    epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, &ee);
+    epoll_ctl(epollFd_, op, fd, &ee);
+    fde->setWatchEvents(watchEvents);
 }
 
 int EpollFdes::wait()
