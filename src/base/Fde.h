@@ -46,14 +46,13 @@ class Fde
 
 class Fdes
 {
-
     public:
         Fde* getFde(int fd);
         virtual ~Fdes();
         // init fdes.
         virtual void create() = 0;
         // return the count of events to be handled.
-        virtual int wait() = 0;
+        virtual int wait(int mSecTimout =-1) = 0;
         // add fd to watch
         virtual void addWatch(int fd, Fde::FdEvent event) = 0;
         virtual void delWatch(int fd, Fde::FdEvent event) = 0;
@@ -73,7 +72,7 @@ class SelectFdes : public Fdes
 {
     public:
         void create();
-        int wait();
+        int wait(int mSecTimout);
         void addWatch(int fd, Fde::FdEvent event);
         void delWatch(int fd, Fde::FdEvent event);
         Fde::FdeType type() { return Fde::SELECT; }
@@ -91,7 +90,7 @@ class EpollFdes : public Fdes
     public:
         EpollFdes();
         void create();
-        int wait();
+        int wait(int mSecTimout);
         void addWatch(int fd, Fde::FdEvent event);
         void delWatch(int fd, Fde::FdEvent event);
         Fde::FdeType type() { return Fde::EPOLL; }

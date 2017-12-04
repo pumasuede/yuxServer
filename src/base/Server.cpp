@@ -19,12 +19,13 @@ Server& Server::getInstance()
     return server;
 }
 
-void Server::init(std::string host, uint16_t port, SocketBase::CallBack cbRead)
+void Server::init(std::string host, uint16_t port, SocketBase::CallBack cbRead, Timer* timer)
 {
-    // create socket
+    // Create socket
     init();
     ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, cbRead);
     addServerSocket(defaultServerSock);
+    addTimer(timer);
 }
 
 void Server::init()
@@ -49,6 +50,19 @@ void Server::init()
     #endif
 
     fdes_->create();
+}
+
+void Server::addTimer(Timer* timer)
+{
+    if (timer == NULL)
+        return;
+    timers_.push_back(timer);
+}
+
+void Server::addTimer(int intval, Timer::TimerCallBack timerCb)
+{
+    Timer *timer = new Timer(intval, timerCb);
+    timers_.push_back(timer);
 }
 
 void Server::addServerSocket(SocketBase* pServerSocket)
@@ -81,9 +95,42 @@ Server::~Server()
 
 void Server::loopOnce()
 {
-    int n = fdes_->wait();
-    if (n<=0)
+    // Compute timer
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    int current = tv.tv_sec*1000 + tv.tv_usec/1000;
+    int min = INT_MAX;
+    for (auto it : timers_)
+    {
+        if (it->lastFired_ == -1)
+        {
+            it->lastFired_ = current;
+        }
+
+        int nextFire = it->lastFired_ + it->mSec_;
+        if (nextFire > current && nextFire < min)
+        {
+            min = nextFire;
+        }
+    }
+
+    int n = fdes_->wait(min - current);
+
+    // Error!
+    if (n<0)
         return;
+
+    // Timeout, lauch timer call back
+    if (n==0)
+    {
+        gettimeofday(&tv, NULL);
+        int current = tv.tv_sec*1000 + tv.tv_usec/1000;
+        for (auto it : timers_)
+        {
+            it->timerCb_(this);
+            it->lastFired_ = current;
+        }
+    }
 
     vector<Fde*>& readyFdes = fdes_->readyList();
     if (n != readyFdes.size())

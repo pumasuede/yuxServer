@@ -12,16 +12,21 @@ int readCallBack(const char* buf, size_t size, SocketBase *sock)
     return 0;
 }
 
+void timerCallBack(void*)
+{
+    cout<<"timerCallBack";
+}
+
 int main(int argc, char** argv)
 {
     Socket sock;
     sock.setCbRead(std::tr1::bind(&readCallBack, _1, _2, _3));
 
-    Fdes *fdes = new SelectFdes;
-    //Fdes *fdes = new EpollFdes;
+    //Fdes *fdes = new SelectFdes;
+    Fdes *fdes = new EpollFdes;
     fdes->create();
     fdes->addWatch(sock.fd(), Fde::READ);
-    fdes->addWatch(sock.fd(), Fde::WRITE);
+    //fdes->addWatch(sock.fd(), Fde::WRITE);
 
     int con = sock.connect("163.com", 80);
     if (con == -1)
@@ -30,20 +35,23 @@ int main(int argc, char** argv)
         exit errno;
     }
 
-    /*
-    char buf[10000];
-    ret = sock.recv((uint8_t*)buf, sizeof(buf));
-    buf[ret] = 0;
-    cout<<buf<<"\n";
-    */
-
-
     while (1)
     {
-        int n = fdes->wait();
+        int n = fdes->wait(50);
 
-        if (n<=0)
+        if (n<0)
             return -1;
+
+        if (n==0)
+        {
+            cout<<"Timeout in wait\n";
+            int ret = sock.sendStr("GET / HTTP/1.1\n\r\n\r\n");
+            if (ret == -1)
+            {
+                cout<<"send error"<<errno<<endl;
+            }
+            continue;
+        }
 
         vector<Fde*>& readyFdes = fdes->readyList();
         if (n != readyFdes.size())
@@ -59,14 +67,17 @@ int main(int argc, char** argv)
             if (fd != sock.fd())
                 continue;
 
+            /*
             if (fde->writable())
             {
+                cout<<"fde "<<fde->fd() <<" writable is true. Send reuqest\n";
                 int ret = sock.sendStr("GET / HTTP/1.1\n\r\n\r\n");
                 if (ret == -1)
                 {
                     cout<<"send error"<<errno<<endl;
                 }
             }
+            */
 
             if (fde->readable())
             {

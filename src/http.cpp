@@ -62,6 +62,13 @@ int parse_arg(int argc, char* argv[])
     return c;
 }
 
+int Timer1Callback(void*)
+{
+    cout<<"*** Timer1Callback called \n ";
+    log_debug("*** Timer1Callback called ");
+}
+
+
 int main(int argc, char* argv[])
 {
     log_open("httpd.log");
@@ -69,6 +76,9 @@ int main(int argc, char* argv[])
 
     Server& mainServer = Server::getInstance();
     mainServer.init();
+
+    Timer *timer = new Timer(5000, &Timer1Callback);
+    mainServer.addTimer(timer);
 
     SocketBase* httpServerSock = HttpServerSocket::create(server_ip, server_port);
     mainServer.addServerSocket(httpServerSock);

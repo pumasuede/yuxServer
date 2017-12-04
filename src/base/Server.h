@@ -4,8 +4,10 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <vector>
+#include <list>
 #include <set>
 
+#include "Utils.h"
 #include "Socket.h"
 
 namespace yux{
@@ -17,11 +19,13 @@ class Server
     public:
         static Server& getInstance();
         ~Server();
-        void init(std::string host, uint16_t port, SocketBase::CallBack cbRead);
+        void init(std::string host, uint16_t port, SocketBase::CallBack cbRead, Timer* timer = NULL);
         void init();
         void loop();
         void loopOnce();
         void stop() { stop_ = true; }
+        void addTimer(Timer* timer);
+        void addTimer(int intval, Timer::TimerCallBack timerCb);
         void addServerSocket(SocketBase* pServerSocket);
         void closeSocket(SocketBase* sock);
 
@@ -29,6 +33,7 @@ class Server
         Server() {};
         std::set<SocketBase*> servSockList_;
         std::vector<SocketBase*> fdToSkt_;
+        std::list<Timer*> timers_;
         Fdes* fdes_;
         bool stop_;
 };

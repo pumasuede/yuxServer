@@ -10,7 +10,8 @@ MESSAGE("Compiler: ${CMAKE_CXX_COMPILER}")
 IF (APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
 ENDIF()
-
+# C++11
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 MESSAGE("GPB DIR : $ENV{GPB_DIR}")
 INCLUDE_DIRECTORIES(. /usr/local/include $ENV{GPB_DIR}/include)
 LINK_DIRECTORIES(/usr/local/lib ../../install/bin $ENV{GPB_DIR}/lib)

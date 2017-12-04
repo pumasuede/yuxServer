@@ -88,7 +88,7 @@ void SelectFdes::delWatch(int fd, Fde::FdEvent event)
     fde->setWatchEvents(watchEvents);
 }
 
-int SelectFdes::wait()
+int SelectFdes::wait(int mSecTimout)
 {
     fd_set rfds = rfds_;
     fd_set wfds = wfds_;
@@ -184,9 +184,9 @@ void EpollFdes::delWatch(int fd, Fde::FdEvent event)
     fde->setWatchEvents(watchEvents);
 }
 
-int EpollFdes::wait()
+int EpollFdes::wait(int mSecTimout)
 {
-    int n = epoll_wait(epollFd_, events_, ee_size_, -1);
+    int n = epoll_wait(epollFd_, events_, ee_size_, mSecTimout);
     if (n<0)
         std::cout<<"Error at epoll_wait: "<<errno<<"\n";
 
