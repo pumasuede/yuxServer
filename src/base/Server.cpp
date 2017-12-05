@@ -125,10 +125,14 @@ void Server::loopOnce()
     {
         gettimeofday(&tv, NULL);
         int current = tv.tv_sec*1000 + tv.tv_usec/1000;
+
         for (auto it : timers_)
         {
-            it->timerCb_(this);
-            it->lastFired_ = current;
+            if (it->lastFired_+it->mSec_ < current+10)
+            {
+                it->timerCb_(this);
+                it->lastFired_ = current;
+            }
         }
     }
 

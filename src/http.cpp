@@ -68,6 +68,11 @@ int Timer1Callback(void*)
     log_debug("*** Timer1Callback called ");
 }
 
+int Timer2Callback(void*)
+{
+    cout<<"*** Timer2Callback called \n ";
+    log_debug("*** Timer2Callback called ");
+}
 
 int main(int argc, char* argv[])
 {
@@ -77,8 +82,10 @@ int main(int argc, char* argv[])
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    Timer *timer = new Timer(5000, &Timer1Callback);
-    mainServer.addTimer(timer);
+    Timer *timer1 = new Timer(5000, &Timer1Callback);
+    Timer *timer2 = new Timer(3000, &Timer2Callback);
+    mainServer.addTimer(timer1);
+    mainServer.addTimer(timer2);
 
     SocketBase* httpServerSock = HttpServerSocket::create(server_ip, server_port);
     mainServer.addServerSocket(httpServerSock);
