@@ -27,8 +27,9 @@ int main(int argc, char** argv)
     fdes->create();
     fdes->addWatch(sock.fd(), Fde::READ);
     //fdes->addWatch(sock.fd(), Fde::WRITE);
+    const char *host = argc > 1 ? argv[1] : "baidu.com";
 
-    int con = sock.connect("163.com", 80);
+    int con = sock.connect(host, 80);
     if (con == -1)
     {
         cout<<"connect error"<<errno<<endl;
