@@ -16,7 +16,6 @@ typedef struct HttpRequest
     std::string version;
     std::string URI;
     std::map<std::string, std::string> header;
-
 } HttpRequest;
 
 class HttpLineParser

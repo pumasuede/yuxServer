@@ -2,6 +2,7 @@
 #define __YUX_UTILS_H__
 
 #include <sys/time.h>
+#include <stdlib.h>
 
 #include <string>
 #include <tr1/functional>
@@ -20,6 +21,18 @@ struct Timer
 };
 
 std::string GetFormatTime();
+
+struct URLParser{
+    URLParser(const std::string& url) : url_(url), port_(0) { }
+    void parse();
+    std::string url_;
+    std::string proto_;
+    std::string host_;
+    uint16_t    port_;
+    std::string path_;
+    std::string query_;
+
+};
 
 }}//namespace
 

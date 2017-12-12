@@ -75,6 +75,7 @@ class Socket : public SocketBase
 
         Socket() {}
         Socket(int fd, const Peer& peer) : SocketBase(fd, peer) {}
+        Socket(const char *host, uint16_t port) { peer_ = Peer(host, port); }
         int connect();
         int connect(const char *host, uint16_t port) { peer_ = Peer(host, port); return connect(); }
         int read();

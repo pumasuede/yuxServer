@@ -22,7 +22,7 @@ ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
 ADD_EXECUTABLE(Test Test.cpp)
-TARGET_LINK_LIBRARIES(Test Base)
+TARGET_LINK_LIBRARIES(Test Base Common)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)
 INSTALL(TARGETS TestClient Test DESTINATION bin)

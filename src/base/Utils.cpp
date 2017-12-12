@@ -6,6 +6,55 @@ namespace base{
 
 using namespace std;
 
+void URLParser::parse()
+{
+    if (url_.empty())
+        return;
+
+    int findOffset = 0;
+
+    size_t protoEnd = url_.find("://");
+
+    // proto can be ignored.
+    if (protoEnd != string::npos)
+    {
+        proto_ = url_.substr(0, protoEnd);
+        findOffset = protoEnd +3;
+    }
+
+    size_t hostEnd = url_.find("/", findOffset);
+    if (hostEnd == string::npos)
+    {
+        return;
+    }
+
+    // port can be ignored
+    size_t portStart = url_.find(":", findOffset);
+    if (portStart != string::npos)
+    {
+        port_ = atoi(url_.substr(portStart+1, hostEnd-portStart).c_str());
+        host_ = url_.substr(findOffset, portStart - findOffset);
+    }
+    else
+    {
+        host_ = url_.substr(findOffset, hostEnd-findOffset);
+        port_ = 80; //default port
+    }
+    findOffset = hostEnd + 1;
+
+    // parameters can be ignored
+    size_t queryStart = url_.find("?", findOffset);
+    if (queryStart != string::npos)
+    {
+        path_ = url_.substr(findOffset, queryStart - findOffset);
+        query_ = url_.substr(queryStart+1);
+    }
+    else
+    {
+        path_ = url_.substr(findOffset);
+    }
+}
+
 string GetFormatTime()
 {
     time_t time;

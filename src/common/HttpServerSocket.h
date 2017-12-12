@@ -1,5 +1,5 @@
-#include <unistd.h>
-#include <stdint.h>
+#ifndef  __YUX_HTTP_SERVER_SOCKET_H_
+#define  __YUX_HTTP_SERVER_SOCKET_H_
 
 #include "base/Socket.h"
 #include "parser/HttpParser.h"
@@ -22,3 +22,5 @@ private:
 };
 
 }}
+
+#endif
