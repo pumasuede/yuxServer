@@ -5,3 +5,7 @@ tags
 *.swp
 build
 install
+GPATH
+GRTAGS
+GSYMS
+GTAGS

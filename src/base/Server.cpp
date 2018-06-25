@@ -157,15 +157,20 @@ void Server::loopOnce()
                 int newFd = newSkt->fd();
                 fdToSkt_[newFd] = newSkt;
                 fdes_->addWatch(newFd, Fde::READ);
-                cout<<"accept new socket - Fd:"<<newFd<<"...\n";
+                cout<<"Accept new socket - Fd:"<<newFd<<"...\n";
             }
             else
             {
-                cout<<"read on client socket "<<fd<<" \n";
+                cout<<"Read on client socket "<<fd<<" \n";
                 int ret = skt->read();
+                if (ret == 0)
+                {
+                    cout<<"Socket is closed by peer, closing socket - Fd: "<<fd <<"\n";
+                    closeSocket(skt);
+                }
                 if (ret < 0)
                 {
-                    cout<<"abnormal in Socket read, will delete socket - Fd: "<<fd <<"\n";
+                    cout<<"Abnormal in Socket read, will delete socket - Fd: "<<fd <<"\n";
                     closeSocket(skt);
                 }
             }

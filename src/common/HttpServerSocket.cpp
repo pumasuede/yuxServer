@@ -19,7 +19,7 @@ namespace common{
 HttpServerSocket* HttpServerSocket::create(const std::string& host, uint16_t port)
 {
      HttpServerSocket* pSock = new HttpServerSocket(host, port);
-     pSock->setCbRead(std::tr1::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
+     pSock->setCbRead(std::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
      return pSock;
 }
 

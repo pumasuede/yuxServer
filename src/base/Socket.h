@@ -1,3 +1,6 @@
+#ifndef __YUX_SOCKET_H__
+#define __YUX_SOCKET_H__
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/errno.h>
@@ -10,19 +13,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <tr1/functional>
+#include <functional>
 
 #include <string>
 
-#ifndef __YUX_SOCKET_H__
-#define __YUX_SOCKET_H__
+using namespace std::placeholders;
 
-using namespace std::tr1::placeholders;
+namespace yux {
+namespace base {
 
-namespace yux
-{
-namespace base
-{
 class Peer
 {
     public :
@@ -38,7 +37,8 @@ class Peer
 class SocketBase
 {
     public:
-        typedef std::tr1::function<int (const char*, size_t, SocketBase*)> CallBack;
+        // For call back. return 0 if OK. return -1 if error.
+        typedef std::function<int (const char*, size_t, SocketBase*)> CallBack;
         virtual void setCbRead(CallBack cb) {}
         virtual void setCbWrite(CallBack cb) { }
 

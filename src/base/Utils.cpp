@@ -25,14 +25,14 @@ void URLParser::parse()
     size_t hostEnd = url_.find("/", findOffset);
     if (hostEnd == string::npos)
     {
-        return;
+        hostEnd = url_.size();
     }
 
     // port can be ignored
     size_t portStart = url_.find(":", findOffset);
     if (portStart != string::npos)
     {
-        port_ = atoi(url_.substr(portStart+1, hostEnd-portStart).c_str());
+        port_ = atoi(url_.substr(portStart+1, hostEnd - portStart).c_str());
         host_ = url_.substr(findOffset, portStart - findOffset);
     }
     else
@@ -40,7 +40,7 @@ void URLParser::parse()
         host_ = url_.substr(findOffset, hostEnd-findOffset);
         port_ = 80; //default port
     }
-    findOffset = hostEnd + 1;
+    findOffset = hostEnd;
 
     // parameters can be ignored
     size_t queryStart = url_.find("?", findOffset);

@@ -48,6 +48,7 @@ class Fdes
 {
     public:
         Fde* getFde(int fd);
+        Fdes() : created_(false) {}
         virtual ~Fdes();
         // init fdes.
         virtual void create() = 0;
@@ -64,6 +65,7 @@ class Fdes
     protected:
         std::vector<Fde*> readyList_;
         std::vector<Fde*> fdeList_;
+        bool created_;
 };
 
 // Select
@@ -102,6 +104,5 @@ class EpollFdes : public Fdes
 };
 #endif
 
-}}
-
+}} //namespace
 #endif

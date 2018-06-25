@@ -33,10 +33,14 @@ Fdes::~Fdes()
 
 void SelectFdes::create()
 {
-    FD_ZERO(&rfds_);
-    FD_ZERO(&wfds_);
-    FD_ZERO(&efds_);
-    maxFd_ = 0;
+    if (!created_)
+    {
+        FD_ZERO(&rfds_);
+        FD_ZERO(&wfds_);
+        FD_ZERO(&efds_);
+        maxFd_ = 0;
+        created_ = true;
+    }
 }
 
 void SelectFdes::addWatch(int fd, Fde::FdEvent event)
@@ -128,14 +132,18 @@ int SelectFdes::wait(int mSecTimout)
 //Epoll
 #ifdef __linux__
 
-EpollFdes::EpollFdes():ee_size_(100)
+EpollFdes::EpollFdes():ee_size_(100), epollFd_(0)
 {
     events_ = new struct epoll_event[ee_size_];
 }
 
 void EpollFdes::create()
 {
-    epollFd_ = epoll_create(10);
+    if (!created_)
+    {
+        epollFd_ = epoll_create(10);
+        created_ = true;
+    }
 }
 
 void EpollFdes::addWatch(int fd, Fde::FdEvent event)

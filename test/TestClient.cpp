@@ -16,7 +16,7 @@ int readCallBack(const char* buf, size_t size, SocketBase *sock)
 int main(int argc, char** argv)
 {
     Socket sock;
-    sock.setCbRead(std::tr1::bind(&readCallBack, _1, _2, _3));
+    sock.setCbRead(bind(&readCallBack, _1, _2, _3));
     sock.connect("127.0.0.1", 8000);
 
     Msg msg;
