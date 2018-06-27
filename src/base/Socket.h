@@ -88,7 +88,8 @@ class Socket : public SocketBase
 class ServerSocket : public SocketBase
 {
     public:
-        static int readCallBack(char* buf, size_t size, SocketBase *sock);
+        static ServerSocket* create(const std::string& host, uint16_t port);
+        int readCallBack(const char* buf, size_t size, SocketBase *sock);
         void setCbRead(SocketBase::CallBack cb) { cbRead_ = cb; }
         void setCbWrite(SocketBase::CallBack cb) { cbWrite_ = cb; }
 
@@ -96,9 +97,9 @@ class ServerSocket : public SocketBase
         ServerSocket(const char* host, uint16_t port) { bind(host, port); listen(); }
         ServerSocket(const char* host, uint16_t port, SocketBase::CallBack cbRead) : cbRead_(cbRead) { bind(host, port); listen(); }
         int bind(const char* host, uint16_t port);
-        int listen(){ return ::listen(fd_, 0); }
+        int listen() { return ::listen(fd_, 0); }
         SocketBase* accept();
-        int write();
+        int write() { return fd_; }
     private:
         Peer self_;
         SocketBase::CallBack cbRead_;

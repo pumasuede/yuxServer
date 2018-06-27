@@ -114,7 +114,7 @@ void Logger::rotate()
     }
 
     fd_ = ::open(filename_.c_str(), O_RDWR|O_APPEND);
-    if (fd_ = -1)
+    if (fd_ == -1)
     {
         return;
     }

@@ -1,2 +1,5 @@
-yuxServer
-a common server
+yuxServer - A common server frame work
+
+Example: test/TestServer.cpp is a example of how to build a simple socket server using just a few lines of code.
+
+Based on the frame work, a simple HTTP server is developed. see src/httpd.cpp

@@ -78,7 +78,7 @@ int Socket::read()
         {
             cout<<"The socket is closed by remote peer\n";
             closed = true;
-            return 0;
+            break;
         }
 
         // readRet < 0 : Handle read error
@@ -107,6 +107,8 @@ int Socket::read()
     cout<<"Socket::read - buf received: "<<pos<<" bytes\n";
 
     int ret = cbRead_(rdBuf_, pos, this);
+    if (closed)
+        return 0;
 
     return ret == -1 ? -1 : 1;
 }
@@ -130,7 +132,7 @@ int ServerSocket::bind(const char* host, uint16_t port)
    return rc;
 }
 
-int ServerSocket::readCallBack(char* buf, size_t size, SocketBase *sock)
+int ServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     string recvBuf(buf, size);
     cout<<"read "<<size<<" bytes:"<<buf<<endl;
@@ -153,9 +155,11 @@ SocketBase* ServerSocket::accept()
     return sock;
 }
 
-int ServerSocket::write()
+ServerSocket* ServerSocket::create(const std::string& host, uint16_t port)
 {
-    return fd_;
+    ServerSocket* pSock = new ServerSocket(host.c_str(), port);
+    pSock->setCbRead(std::bind(&ServerSocket::readCallBack, pSock, _1, _2, _3));
+    return pSock;
 }
 
 }}

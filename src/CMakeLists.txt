@@ -29,7 +29,7 @@ ADD_SUBDIRECTORY(common)
 ADD_EXECUTABLE(yuxServer main.cpp)
 TARGET_LINK_LIBRARIES(yuxServer Pbout Common StateMachine)
 
-ADD_EXECUTABLE(yuHttpd http.cpp)
+ADD_EXECUTABLE(yuHttpd httpd.cpp)
 TARGET_LINK_LIBRARIES(yuHttpd Pbout Common StateMachine)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)

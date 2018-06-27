@@ -26,8 +26,11 @@ AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
-ADD_EXECUTABLE(Test Test.cpp)
-TARGET_LINK_LIBRARIES(Test Base Common)
+ADD_EXECUTABLE(TestServer TestServer.cpp)
+TARGET_LINK_LIBRARIES(TestServer Base)
+
+ADD_EXECUTABLE(HttpClient TestHttpClient.cpp)
+TARGET_LINK_LIBRARIES(HttpClient Base Common)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)
-INSTALL(TARGETS TestClient Test DESTINATION bin)
+INSTALL(TARGETS HttpClient TestClient TestServer DESTINATION bin)
