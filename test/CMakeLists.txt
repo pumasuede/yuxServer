@@ -23,6 +23,9 @@ LINK_DIRECTORIES(/usr/local/lib $ENV{BASE_DIR}/install/bin $ENV{GPB_DIR}/lib)
 
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 
+ADD_EXECUTABLE(TestThread main.cpp)
+TARGET_LINK_LIBRARIES(TestThread Base pthread)
+
 ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
@@ -33,4 +36,4 @@ ADD_EXECUTABLE(HttpClient TestHttpClient.cpp)
 TARGET_LINK_LIBRARIES(HttpClient Base Common)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)
-INSTALL(TARGETS HttpClient TestClient TestServer DESTINATION bin)
+INSTALL(TARGETS HttpClient TestClient TestServer TestThread DESTINATION bin)

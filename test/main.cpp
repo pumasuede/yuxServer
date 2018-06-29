@@ -1,6 +1,5 @@
-#include "Log.h"
-#include "Mutex.h"
-#include "Thread.h"
+#include "base/Log.h"
+#include "base/Thread.h"
 
 
 class MainThread : public Thread
@@ -12,7 +11,7 @@ class MainThread : public Thread
 
 void MainThread::workBody()
 {
-    Thread *pThread = new Thread("1", this);
+    Thread *pThread = new Thread("work thread", this);
     pThread->start();
 
     int i = 0;
@@ -30,6 +29,7 @@ int main()
     Thread *main = new MainThread();
 
     main->start();
+    main->join();
 
     //log_debug("line %d\n", 1);
 }
