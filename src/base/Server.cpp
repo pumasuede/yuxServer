@@ -165,6 +165,7 @@ void Server::loopOnce()
                 int ret = skt->read();
                 if (ret == 0)
                 {
+                    log_debug("Socket is closed by peer, closing socket - Fd: %d", fd);
                     cout<<"Socket is closed by peer, closing socket - Fd: "<<fd <<"\n";
                     closeSocket(skt);
                 }
@@ -183,13 +184,18 @@ void Server::loopOnce()
     }
 }
 
-void Server::closeSocket(SocketBase* sock)
+void Server::closeSocket(int fd)
 {
-    int fd = sock->fd();
     fdes_->delWatch(fd, Fde::READ);
     fdes_->delWatch(fd, Fde::WRITE);
-    fdToSkt_[fd] = NULL;
-    cout<<"deleting socket - Fd: "<<fd <<"\n";
+
+    cout<<"Deleting socket - Fd: "<<fd <<"\n";
+    std::lock_guard<std::mutex> lock(mutex_);
+    SocketBase *sock = fdToSkt_[fd];
+    if (sock == nullptr)
+        return;
+
+    fdToSkt_[fd] = nullptr;
     delete sock;
 }
 

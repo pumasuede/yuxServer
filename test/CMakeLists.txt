@@ -29,11 +29,11 @@ TARGET_LINK_LIBRARIES(TestThread Base pthread)
 ADD_EXECUTABLE(TestClient TestClient.cpp)
 TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
-ADD_EXECUTABLE(TestServer TestServer.cpp)
-TARGET_LINK_LIBRARIES(TestServer Base)
-
 ADD_EXECUTABLE(HttpClient TestHttpClient.cpp)
-TARGET_LINK_LIBRARIES(HttpClient Base Common)
+TARGET_LINK_LIBRARIES(HttpClient Base Http)
+
+ADD_EXECUTABLE(TestServer TestServer.cpp)
+TARGET_LINK_LIBRARIES(TestServer Base pthread)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)
 INSTALL(TARGETS HttpClient TestClient TestServer TestThread DESTINATION bin)

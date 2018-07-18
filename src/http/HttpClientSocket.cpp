@@ -6,7 +6,7 @@ using namespace std;
 using namespace yux::base;
 
 namespace yux{
-namespace common{
+namespace http{
 
 int HttpClientSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {

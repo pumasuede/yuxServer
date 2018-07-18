@@ -2,11 +2,11 @@
 #include "base/Socket.h"
 #include "base/Fde.h"
 #include "base/Log.h"
-#include "common/HttpClientSocket.h"
+#include "http/HttpClientSocket.h"
 
 using namespace std;
 using namespace yux::base;
-using namespace yux::common;
+using namespace yux::http;
 
 int readCallBack(const char* buf, size_t size, SocketBase *sock)
 {

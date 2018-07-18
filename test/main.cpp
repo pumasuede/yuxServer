@@ -1,6 +1,7 @@
 #include "base/Log.h"
 #include "base/Thread.h"
 
+using namespace yux::base;
 
 class MainThread : public Thread
 {

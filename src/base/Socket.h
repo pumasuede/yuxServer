@@ -67,6 +67,7 @@ class SocketBase
         Peer peer_;
 };
 
+// Client socket
 class Socket : public SocketBase
 {
     public:
@@ -85,6 +86,7 @@ class Socket : public SocketBase
         CallBack cbWrite_;
 };
 
+// Sever socket
 class ServerSocket : public SocketBase
 {
     public:

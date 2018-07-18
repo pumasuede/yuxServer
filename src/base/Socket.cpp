@@ -86,7 +86,7 @@ int Socket::read()
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
             // Reading buffer is complete, no available data
-            log_debug("errno == EAGAIN when reading socket buffer - all available data is read");
+            log_debug("errno == EAGAIN when reading socket buffer - all available data is read complete");
             break;
         }
         else if (errno == EINTR)
@@ -126,7 +126,7 @@ int ServerSocket::bind(const char* host, uint16_t port)
    if (rc == -1)
    {
        std::cout<<"Socket bind failed on port "<<port<<" : "<<strerror(errno) <<"\n";
-       throw strerror(errno);
+       exit(-1);
    }
 
    return rc;

@@ -25,12 +25,13 @@ ADD_SUBDIRECTORY(base)
 ADD_SUBDIRECTORY(parser)
 ADD_SUBDIRECTORY(statemachine)
 ADD_SUBDIRECTORY(common)
+ADD_SUBDIRECTORY(http)
 
-ADD_EXECUTABLE(yuxServer main.cpp)
+ADD_EXECUTABLE(yuxServer Main.cpp)
 TARGET_LINK_LIBRARIES(yuxServer Pbout Common StateMachine)
 
-ADD_EXECUTABLE(yuHttpd httpd.cpp)
-TARGET_LINK_LIBRARIES(yuHttpd Pbout Common StateMachine)
+ADD_EXECUTABLE(yuHttpd Httpd.cpp)
+TARGET_LINK_LIBRARIES(yuHttpd Http pthread)
 
 SET(CMAKE_INSTALL_PREFIX ../../install)
 INSTALL(TARGETS yuxServer yuHttpd DESTINATION bin)

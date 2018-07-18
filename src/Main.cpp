@@ -11,7 +11,7 @@
 #include "base/Log.h"
 #include "base/Server.h"
 #include "common/YuxServerSocket.h"
-#include "common/HttpServerSocket.h"
+#include "http/HttpServerSocket.h"
 
 using namespace std;
 using namespace yux::base;
@@ -71,6 +71,7 @@ int main(int argc, char* argv[])
     mainServer.init();
 
     SocketBase* yuxServerSock = YuxServerSocket::create(server_ip.c_str(), 8888);
+
     mainServer.addServerSocket(yuxServerSock);
 
     //SocketBase* httpServerSock = HttpServerSocket::create(server_ip.c_str(), 9999);

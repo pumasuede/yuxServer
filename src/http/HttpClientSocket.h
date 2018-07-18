@@ -6,7 +6,7 @@
 #include "base/Singleton.h"
 
 namespace yux{
-namespace common{
+namespace http{
 
 class HttpClientSocket : public yux::base::Socket
 {

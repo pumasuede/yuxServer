@@ -2,20 +2,16 @@
 
 using namespace std;
 
+namespace yux{
+namespace base{
+
 ThreadManager ThreadManager::m_;
 ThreadManager* ThreadManager::getInstance() { return &m_; }
 
-void* Thread::threadEntry(void* t)
+void Thread::threadEntry()
 {
-    Thread* thread = static_cast<Thread*>(t);
-
-    if (thread)
-    {
-        thread->didStart();
-        thread->workBody();
-    }
-
-    return NULL;
+    didStart();
+    workBody();
 }
 
 void Thread::workBody()
@@ -28,17 +24,16 @@ void Thread::workBody()
     }
 }
 
-Thread::Thread(const std::string& name, Thread *parent ) : name_(name), parent_(parent), stop_(false)
+Thread::Thread(const std::string& name, Thread *parent ) : name_(name), parent_(parent), stop_(false), thr_(nullptr)
 {
     id_ = ThreadManager::getInstance()->addThread(this);
     cout<<"Thread "<<id_ <<" is created..\n";
 }
 
-
 // Thread manager
 size_t ThreadManager::addThread(Thread *pThr)
 {
-    Lock lock(mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     if ( next_id_>65535 )
         next_id_=0;
     threadTable_[next_id_] = pThr;
@@ -51,3 +46,5 @@ void ThreadManager::dump()
     for (auto& thr : threadTable_)
         cout<<"*** Thread "<< thr.first<<" -> "<<thr.second->getName()<<" id : "<<it->second->getTid()<<"\n";
 }
+
+}}

@@ -10,12 +10,11 @@
 
 #include "base/Log.h"
 #include "base/Server.h"
-#include "common/YuxServerSocket.h"
-#include "common/HttpServerSocket.h"
+#include "http/HttpServerSocket.h"
 
 using namespace std;
 using namespace yux::base;
-using namespace yux::common;
+using namespace yux::http;
 
 #define DEFAUL_PORT  8080
 string server_ip = "0.0.0.0";
@@ -74,23 +73,45 @@ int Timer2Callback(void*)
     log_debug("*** Timer2Callback called ");
 }
 
-int main(int argc, char* argv[])
+class MainThread : public Thread
 {
-    log_open("httpd.log");
-    parse_arg(argc, argv);
+    public:
+        MainThread() : Thread("main thread") {}
+        void workBody();
+};
 
+void MainThread::workBody()
+{
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
     Timer *timer1 = new Timer(5000, &Timer1Callback);
     Timer *timer2 = new Timer(3000, &Timer2Callback);
-    mainServer.addTimer(timer1);
-    mainServer.addTimer(timer2);
+    //mainServer.addTimer(timer1);
+    //mainServer.addTimer(timer2);
 
-    SocketBase* httpServerSock = HttpServerSocket::create(server_ip, server_port);
+    HttpServerSocket* httpServerSock = HttpServerSocket::create(server_ip, server_port);
     mainServer.addServerSocket(httpServerSock);
 
+    const int httpWorkThreadNum = 5;
+    for (int i = 0; i < httpWorkThreadNum; i++)
+    {
+        HttpServerThread *pThread = new HttpServerThread("Http wotk thread"+std::to_string(i), httpServerSock);
+        pThread->start();
+    }
+
     mainServer.loop();
+}
+
+int main(int argc, char* argv[])
+{
+    log_open("httpd.log");
+    parse_arg(argc, argv);
+
+    Thread *main = new MainThread();
+
+    main->start();
+    main->join();
 
     return 0;
 }

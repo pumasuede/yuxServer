@@ -16,10 +16,16 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <pthread.h>
+
+#include <thread>
+#include <mutex>
 
 #ifndef _YUX_LOG_H__
 #define _YUX_LOG_H__
+
+namespace yux{
+namespace base{
+
 class Logger
 {
     public:
@@ -40,12 +46,13 @@ class Logger
         static int getLevel(const std::string& levelname);
 
     private:
-        int fd_;
         std::string filename_;
+        int fd_;
         int level_;
-        pthread_mutex_t mutex_;
+        std::mutex mutex_;
 
         uint64_t rotateSize_;
+
         struct{
             uint64_t w_curr;
             uint64_t w_total;
@@ -73,7 +80,6 @@ class Logger
         int fatal(const char *fmt, ...);
 };
 
-
 inline int log_open(int fd, int level=Logger::LEVEL_DEBUG) { return Logger::instance().open(fd, level); }
 inline int log_open(const char *filename, int level=Logger::LEVEL_DEBUG, uint64_t rotateSize=0) { return Logger::instance().open(filename, level, rotateSize); }
 
@@ -85,19 +91,20 @@ int log_write(int level, const char *fmt, ...);
 #ifdef NDEBUG
 #define log_trace(fmt, args...) do{}while(0)
 #else
-#define log_trace(fmt, args...)	\
-    log_write(Logger::LEVEL_TRACE, "%s(%d): " fmt, __FILE__, __LINE__, ##args)
+#define log_trace(fmt, args...) \
+    log_write(yux::base::Logger::LEVEL_TRACE, "(%d): " fmt,  __LINE__, ##args)
 #endif
 
-#define log_debug(fmt, args...)	\
-    log_write(Logger::LEVEL_DEBUG, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
-#define log_info(fmt, args...)	\
-    log_write(Logger::LEVEL_INFO, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
-#define log_warn(fmt, args...)	\
-    log_write(Logger::LEVEL_WARN, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
-#define log_error(fmt, args...)	\
-    log_write(Logger::LEVEL_ERROR, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
-#define log_fatal(fmt, args...)	\
-    log_write(Logger::LEVEL_FATAL, "[%x][%s - %s] " fmt, pthread_self(), __FILE__, __func__, ##args)
+#define log_debug(fmt, args...) \
+    log_write(Logger::LEVEL_DEBUG, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+#define log_info(fmt, args...) \
+    log_write(Logger::LEVEL_INFO, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+#define log_warn(fmt, args...) \
+    log_write(Logger::LEVEL_WARN, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+#define log_error(fmt, args...) \
+    log_write(Logger::LEVEL_ERROR, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+#define log_fatal(fmt, args...) \
+    log_write(Logger::LEVEL_FATAL, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
 
+}}
 #endif

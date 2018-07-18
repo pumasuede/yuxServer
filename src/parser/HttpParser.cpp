@@ -21,7 +21,7 @@ bool HttpLineParser::parse(HttpRequest &req, const char *buf, uint32_t size)
         {
             req.URI = line.substr(pos_s, pos_e-pos_s);
         }
-        std::cout<<"parsed URI:"<<req.URI<<"\n";
+        std::cout<<"Parsed URI:"<<req.URI<<"\n";
     }
     return true;
 }

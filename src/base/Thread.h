@@ -7,8 +7,10 @@
 #include <thread>
 #include <map>
 
-#include "Mutex.h"
 #include "Log.h"
+
+namespace yux{
+namespace base{
 
 class Thread
 {
@@ -18,24 +20,25 @@ protected:
     std::thread     *thr_;
     Thread          *parent_;
     bool            stop_;
+    void threadEntry();
 
-    static void* threadEntry(void* t);
 public:
     Thread(const std::string& name, Thread *parent = NULL);
-    virtual ~Thread() {}
+    virtual ~Thread() { delete thr_; }
     inline std::thread::id start();
     inline void stop();
-    void join() { thr_->join(); delete thr_;}
-    virtual void didStart() {};
-    virtual void workBody();
-
+    void join() { thr_->join(); }
+    void datach() { thr_->detach(); }
     std::thread::id getTid() { return thr_->get_id(); }
     std::string& getName() { return name_; }
+
+    virtual void didStart() {};
+    virtual void workBody();
 };
 
 class ThreadManager
 {
-    Mutex mutable mutex_;
+    std::mutex mutex_;
     std::map<uint32_t, Thread*> threadTable_;
     size_t next_id_;
     static ThreadManager m_;
@@ -72,4 +75,5 @@ inline void Thread::stop()
     stop_ = true;
 }
 
+}}
 #endif

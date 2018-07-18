@@ -1,5 +1,8 @@
 #include "Log.h"
 
+namespace yux{
+namespace base{
+
 Logger& Logger::instance()
 {
     static Logger logger;
@@ -19,12 +22,10 @@ Logger::Logger() : fd_(-1), level_(LEVEL_DEBUG), rotateSize_(0)
 {
     stats_.w_curr = 0;
     stats_.w_total = 0;
-    pthread_mutex_init(&mutex_, NULL);
 }
 
 Logger::~Logger()
 {
-    pthread_mutex_destroy(&mutex_);
     ::close(fd_);
 }
 
@@ -34,8 +35,7 @@ int Logger::open(int fd, int level)
     level_ = level;
 
     struct stat st;
-    int ret = fstat(fd_, &st);
-    if (ret == -1)
+    if (fstat(fd_, &st) == -1)
     {
         fprintf(stderr, "fstat log file %s error!", filename_.c_str());
         return -1;
@@ -175,8 +175,8 @@ inline static const char* level_name(int level)
     return "";
 }
 
-#define LEVEL_NAME_LEN	8
-#define LOG_BUF_LEN		4096
+#define LEVEL_NAME_LEN 8
+#define LOG_BUF_LEN 4096
 
 int Logger::logv(int level, const char *fmt, va_list ap)
 {
@@ -230,9 +230,8 @@ int Logger::logv(int level, const char *fmt, va_list ap)
         {
             const char *p = "begin to rotate";
             ::write(fd_, p, strlen(p));
-            pthread_mutex_lock(&mutex_);
+            std::lock_guard<std::mutex> lock(mutex_);
             rotate();
-            pthread_mutex_unlock(&mutex_);
         }
 
         return len;
@@ -294,3 +293,5 @@ int Logger::fatal(const char *fmt, ...)
     va_end(ap);
     return ret;
 }
+
+}} // namespace
