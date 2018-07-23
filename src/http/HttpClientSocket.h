@@ -11,7 +11,11 @@ namespace http{
 class HttpClientSocket : public yux::base::Socket
 {
     public:
+#ifdef __linux__
         #define FDES yux::base::Singleton<yux::base::EpollFdes>
+#else
+        #define FDES yux::base::Singleton<yux::base::SelectFdes>
+#endif
         HttpClientSocket() { FDES::getInstance()->create(); }
         HttpClientSocket(const std::string& host, uint16_t port = 80) : yux::base::Socket(host.c_str(), port) { FDES::getInstance()->create(); }
         int request(const std::string& url, CallBack cb);

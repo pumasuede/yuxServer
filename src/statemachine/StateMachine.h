@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <map>
-#include <tr1/memory>
+#include <memory>
 
 #include "common/State.h"
 #include "common/Event.h"

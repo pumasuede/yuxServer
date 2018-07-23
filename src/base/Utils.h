@@ -5,14 +5,14 @@
 #include <stdlib.h>
 
 #include <string>
-#include <tr1/functional>
+#include <functional>
 
 namespace yux{
 namespace base{
 
 struct Timer
 {
-    typedef std::tr1::function<int (void*)> TimerCallBack;
+    typedef std::function<int (void*)> TimerCallBack;
     Timer(int mSec, TimerCallBack timerCb): mSec_(mSec), timerCb_(timerCb), lastFired_(-1) { }
 
     int mSec_;

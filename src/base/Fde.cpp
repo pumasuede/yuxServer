@@ -101,7 +101,10 @@ int SelectFdes::wait(int mSecTimout)
     int n = select(maxFd_+1, &rfds, &wfds, &efds, 0);
 
     if (n<0)
-        std::cout<<"Error at select: "<<errno<<"\n";
+    {
+        std::cout<<"Error at select: "<<strerror(errno)<<"\n";
+        return n;
+    }
 
     Fde *fde;
     int fdEvents;
@@ -196,7 +199,7 @@ int EpollFdes::wait(int mSecTimout)
 {
     int n = epoll_wait(epollFd_, events_, ee_size_, mSecTimout);
     if (n<0)
-        std::cout<<"Error at epoll_wait: "<<errno<<"\n";
+        std::cout<<"Error at epoll_wait: "<<strerror(errno)<<"\n";
 
     readyList_.clear();
 
