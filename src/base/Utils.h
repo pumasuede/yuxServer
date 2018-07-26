@@ -10,6 +10,9 @@
 namespace yux{
 namespace base{
 
+std::string getFormatTime();
+std::string trim(const std::string& str);
+
 struct Timer
 {
     typedef std::function<int (void*)> TimerCallBack;
@@ -19,8 +22,6 @@ struct Timer
     int lastFired_;
     TimerCallBack timerCb_;
 };
-
-std::string GetFormatTime();
 
 struct URLParser{
     URLParser(const std::string& url) : url_(url), port_(0) { }

@@ -12,10 +12,11 @@ class Singleton
 {
     public:
         static T* getInstance();
+    protected:
+        Singleton() {} ;
     private:
-        Singleton(const T&);
-        Singleton &operator=(const T&);
-        Singleton();
+        Singleton(const T&) = delete;
+        Singleton &operator=(const T&) = delete;
 };
 
 template <class T>

@@ -1,10 +1,12 @@
 #include <iostream>
 #include <errno.h>
+#include <string.h>
 #include "Fde.h"
+
+using namespace std;
 
 namespace yux {
 namespace base {
-
 
 Fde* Fdes::getFde(int fd)
 {

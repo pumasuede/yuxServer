@@ -17,6 +17,7 @@ namespace yux{
 namespace http{
 
 std::mutex HttpServerThread::mutex_;
+std::condition_variable HttpServerThread::cv_;
 
 HttpServerSocket* HttpServerSocket::create(const string& host, uint16_t port)
 {
@@ -52,6 +53,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     {
         lock_guard<std::mutex> lock(HttpServerThread::mutex_);
         reqList_.push_back(req);
+        HttpServerThread::cv_.notify_all();
     }
 
     recvData.clear();
@@ -61,26 +63,13 @@ void HttpServerThread::workBody()
 {
     Req req;
     list<Req>& reqList = pServerSock_->getReqList();
-    int listSize = 0;
 
     while (1)
     {
         {
-            lock_guard<std::mutex> lock(mutex_);
-            listSize = reqList.size();
-        }
+            unique_lock<std::mutex> lock(mutex_);
+            cv_.wait(lock, [&]{return reqList.size() > 0;});
 
-        if (listSize == 0)
-        {
-            usleep(200);
-            continue;
-        }
-
-        {
-            lock_guard<std::mutex> lock(mutex_);
-            listSize = reqList.size();
-            if (listSize ==0)
-                continue;
             req = reqList.front();
             reqList.pop_front();
         }

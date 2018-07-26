@@ -4,6 +4,7 @@
 #include <list>
 #include <vector>
 #include <mutex>
+#include <condition_variable>
 
 #include "base/Thread.h"
 #include "base/Socket.h"
@@ -44,6 +45,7 @@ private:
     HttpServerSocket* pServerSock_;
     yux::parser::HttpRequestParser httpParser_;
     static std::mutex mutex_;
+    static std::condition_variable cv_;
 };
 
 }}
