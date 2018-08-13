@@ -1,6 +1,7 @@
 #include <iostream>
 #include "HttpClientSocket.h"
 #include "base/Utils.h"
+#include "base/Log.h"
 
 using namespace std;
 using namespace yux::base;
@@ -8,10 +9,17 @@ using namespace yux::base;
 namespace yux{
 namespace http{
 
+void HttpClientSocket::close()
+{
+    Fdes* fdes = FDES::getInstance();
+    fdes->delWatch(fd_, Fde::READ);
+    ::close(fd_);
+}
+
 int HttpClientSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     string data(buf, size);
-    std::cout<<data<<"\n";
+    log_debug("HttpClientSocket::readCallBack: %s", data.c_str());
     return 0;
 }
 
@@ -44,7 +52,7 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
 
     while (1)
     {
-        int n = fdes->wait();
+        int n = fdes->wait(m_timeOut);
 
         if (n<0)
             return -1;
@@ -52,7 +60,7 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
         if (n==0)
         {
             //timeout
-            cout<<"timeout\n";
+            log_debug("http client request timeout");
             return -1;
         }
 
@@ -67,24 +75,23 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
             Fde *fde = readyFdes[i];
             int fd = fde->fd();
 
-            if (fd != fd_)
+            if (fd != fd_ || !fde->readable())
                 continue;
 
-            if (fde->readable())
+            int ret = read();
+
+            if (ret == 0)
             {
-                int ret = read();
-                if (ret == 0)
-                {
-                    cout<<"Socket is closed by peer, closing socket - Fd: "<<fd <<"\n";
-                    close();
-                    return -1;
-                }
-                if (ret < 0)
-                {
-                    cout<<"Socket read error, will delete socket - Fd: "<<fd <<"\n";
-                    close();
-                    return -1;
-                }
+                log_debug("Socket is closed by peer, closing socket - Fd: %d", fd);
+                close();
+                return -1;
+            }
+
+            if (ret < 0)
+            {
+                close();
+                cout<<"Socket read error, will delete socket - Fd: "<<fd <<"\n";
+                return -1;
             }
         }
     }

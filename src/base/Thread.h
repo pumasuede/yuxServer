@@ -28,7 +28,7 @@ public:
     inline std::thread::id start();
     inline void stop();
     void join() { thr_->join(); }
-    void datach() { thr_->detach(); }
+    void detach() { thr_->detach(); }
     std::thread::id getTid() { return thr_->get_id(); }
     std::string& getName() { return name_; }
 

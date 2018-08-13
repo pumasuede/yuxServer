@@ -90,7 +90,7 @@ void HttpServerThread::workBody()
         SocketBase *sock = Server::getInstance().getSocketByFd(req.fd);
         if (sock == nullptr)
         {
-            log_debug("The socket on fd %d is already closed, nothing to do", sock->fd());
+            log_debug("The socket on fd %d is already closed, nothing to do", req.fd);
             return;
         }
 
