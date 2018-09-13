@@ -35,7 +35,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
 {
     static string recvData;
     string tmpData(buf, size);
-    log_debug("\n<RAW tmp data>:\n%s", tmpData.c_str());
+    log_trace("\n<RAW tmp data>:\n%s", tmpData.c_str());
     recvData += tmpData;
     if (tmpData.find("\r\n\r\n") == string::npos)
     {
@@ -48,7 +48,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     req.seq = n++;
     req.fd = sock->fd();
     req.data = recvData;
-    log_debug("\n<Recv HTTP seq:%d fd:%d>:\n%s", req.seq, req.fd, recvData.c_str());
+    log_trace("\n<Recv HTTP seq:%d fd:%d>:\n%s", req.seq, req.fd, recvData.c_str());
     if (recvData.size() > 0)
     {
         lock_guard<std::mutex> lock(HttpServerThread::mutex_);
@@ -77,7 +77,8 @@ void HttpServerThread::workBody()
         HttpRequest httpReq;
 
         bool parseRet = httpParser_.parse(httpReq, req.data.c_str(), req.data.size());
-        log_debug("Process http request seq:%d %s\n", req.seq, httpReq.URI.c_str());
+        const string& uri = httpReq.startLine.URI;
+        log_debug("Process http request seq:%d %s\n", req.seq, uri.c_str());
 
         if (!parseRet)
         {
@@ -99,7 +100,7 @@ void HttpServerThread::workBody()
         sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");
         sock->sendStr("Server: yuhttpd\r\n\r\n");
 
-        string localFile = pServerSock_->getDocRoot() + httpReq.URI;
+        string localFile = pServerSock_->getDocRoot() + uri;
 
         string line;
         ifstream file(localFile.c_str());
@@ -113,7 +114,7 @@ void HttpServerThread::workBody()
         }
         else
         {
-            sock->sendStr("Can't find Request URL "+httpReq.URI+" !<br>\n");
+            sock->sendStr("Can't find Request URL "+ uri +" !<br>\n");
         }
 
         Server::getInstance().closeSocket(req.fd);

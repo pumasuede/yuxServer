@@ -1,0 +1,16 @@
+# port
+# Listen port
+port = 8888
+
+# document_root
+# Document root of http server
+document_root = /local/www
+
+# log_level
+# Log level
+# Levels from low to high : "FATAL" "ERROR" "WARN" "INFO" "DEBUG" "TRACE"
+log_level = DEBUG
+
+# log_file
+# Log file name
+log_file = httpd.log

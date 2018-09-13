@@ -10,43 +10,51 @@ namespace yux
 namespace parser
 {
 
-typedef struct HttpRequest
+struct HttpReqStartLine
 {
     std::string method;
-    std::string version;
     std::string URI;
+    std::string version;
+};
+
+struct HttpRequest
+{
+    HttpReqStartLine startLine;
     std::map<std::string, std::string> header;
-} HttpRequest;
+    std::map<std::string, std::string> postData;
+};
 
 class HttpLineParser
 {
     public:
-    bool parse(HttpRequest &req, const char *begin, uint32_t size);
-    std::string& parseError() { return error_; }
-    private:
-    std::string error_;
+        HttpLineParser(const char *begin, uint32_t size) : lineBuf_(begin, size) { }
+        virtual ~HttpLineParser() { }
+        virtual bool isStartLine() = 0;
+        virtual void parseOption(std::string& name, std::string& value);
+        std::string& error() { return error_; }
+    protected:
+        std::string lineBuf_;
+        std::string error_;
+};
+
+class HttpReqLineParser : public HttpLineParser
+{
+    public:
+        // parse a line.  return true if parse sucessfully
+        HttpReqLineParser(const char *begin, uint32_t size) : HttpLineParser(begin, size) { }
+        virtual bool isStartLine() override;
+        virtual HttpReqStartLine parseStartLine();
+        bool parse(HttpRequest& req);
 };
 
 class HttpRequestParser
 {
     public:
-        bool parse(HttpRequest &req, const char *begin, uint32_t size);
-        std::string& parseError() {return error_; }
+        bool parse(HttpRequest& req, const char *begin, uint32_t size);
+        std::string& error() {return error_; }
 
     private:
-        HttpLineParser lineParser_;
         std::string error_;
-
-        inline bool isControl(int c)
-        {
-            return (c >= 0 && c <= 31) || (c == 127);
-        }
-
-        // Check if a byte is a digit.
-        inline bool isDigit(int c)
-        {
-            return c >= '0' && c <= '9';
-        }
 };
 
 }} //name space

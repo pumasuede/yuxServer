@@ -123,32 +123,36 @@ void Logger::rotate()
 
 int Logger::getLevel(const std::string& levelname)
 {
-    if (levelname == "trace")
+    std::string level = levelname;
+    for (auto & c: level)
+        c = toupper(c);
+
+    if (level == "TRACE")
     {
         return LEVEL_TRACE;
     }
 
-    if (levelname == "debug")
+    if (level == "DEBUG")
     {
         return LEVEL_DEBUG;
     }
 
-    if (levelname == "info")
+    if (level == "INFO")
     {
         return LEVEL_INFO;
     }
 
-    if (levelname == "error")
+    if (level == "ERROR")
     {
         return LEVEL_ERROR;
     }
 
-    if (levelname == "fatal")
+    if (level == "FATAL")
     {
         return LEVEL_FATAL;
     }
 
-    if (levelname == "warn")
+    if (level == "WARN")
     {
         return LEVEL_WARN;
     }

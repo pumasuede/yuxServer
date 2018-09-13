@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <iostream>
+#include <regex>
 
 #include "HttpParser.h"
 
@@ -8,25 +9,41 @@ using namespace std;
 namespace yux{
 namespace parser{
 
-bool HttpLineParser::parse(HttpRequest &req, const char *buf, uint32_t size)
+bool HttpReqLineParser::isStartLine()
 {
-    string line(buf, size);
-    size_t pos = 0;
-    if ((pos=line.find("GET")) != string::npos)
+    regex reg("(GET|PUT|POST|DELETE) .* HTTP/\\d{1}\\.\\d{1}");
+    return regex_match(lineBuf_, reg) ? true : false;
+}
+
+HttpReqStartLine HttpReqLineParser::parseStartLine()
+{
+    HttpReqStartLine startLine;
+    std::stringstream lineStream(lineBuf_);
+    lineStream>>startLine.method>>startLine.URI>>startLine.version;
+    return startLine;
+}
+
+void HttpLineParser::parseOption(string& name, string& value)
+{
+}
+
+bool HttpReqLineParser::parse(HttpRequest& req)
+{
+    if (isStartLine())
     {
-        size_t pos_s=0, pos_e=0;
-        pos_s = line.find("/", pos);
-        pos_e = line.find(" HTTP/", pos_s);
-        if (pos_e > pos_s)
-        {
-            req.URI = line.substr(pos_s, pos_e-pos_s);
-        }
-        std::cout<<"Parsed URI:"<<req.URI<<"\n";
+        req.startLine = parseStartLine();
     }
+    else
+    {
+        string name, value;
+        parseOption(name, value);
+        req.header[name] = value;
+    }
+
     return true;
 }
 
-bool HttpRequestParser::parse(HttpRequest &req, const char *buf, uint32_t size)
+bool HttpRequestParser::parse(HttpRequest& req, const char *buf, uint32_t size)
 {
     std::cout<<"ready to parse http...\n";
     int i=0, begin=0;
@@ -42,9 +59,10 @@ bool HttpRequestParser::parse(HttpRequest &req, const char *buf, uint32_t size)
 
         if (buf[i]=='\r' && buf[i+1]=='\n')
         {
-            if (!lineParser_.parse(req, buf+begin, i-begin))
+            HttpReqLineParser lineParser(buf+begin, i-begin);
+            if (!lineParser.parse(req))
             {
-                error_ = lineParser_.parseError();
+                error_ = lineParser.error();
                 return false;
             }
 

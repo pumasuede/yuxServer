@@ -23,6 +23,18 @@ struct Timer
     TimerCallBack timerCb_;
 };
 
+// Check if a char is a control char.
+inline bool isControl(char c)
+{
+    return (c >= 0 && c <= 31) || (c == 127);
+}
+
+// Check if a char is a digit.
+inline bool isDigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+
 struct URLParser{
     URLParser(const std::string& url) : url_(url), port_(0) { }
     void parse();

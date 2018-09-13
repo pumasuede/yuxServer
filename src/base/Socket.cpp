@@ -63,6 +63,7 @@ int Socket::read()
     bzero(rdBuf_, sizeof(rdBuf_));
 
     cout<<"Socket::read - About to read socket...\n";
+    log_debug("About to read socket...");
     int tmpSize = BUF_SIZE < 1024 ? BUF_SIZE : 1024;
 
     while (pos <= BUF_SIZE - tmpSize)
@@ -70,13 +71,14 @@ int Socket::read()
         readBytes = ::read(fd_, &rdBuf_[pos], tmpSize);
         if (readBytes > 0)
         {
-            cout<<"read "<<readBytes<<"bytes\n";
+            cout<<"read "<<readBytes<<" bytes\n";
+            log_debug("read %d bytes", readBytes);
             pos += readBytes;
             continue;
         }
         else if (readBytes == 0)
         {
-            cout<<"The socket is closed by remote peer\n";
+            log_debug("The socket is closed by remote peer\n");
             closed = true;
             break;
         }
@@ -104,7 +106,6 @@ int Socket::read()
 
     // read completed , do callback
     log_debug("Buf received:%d bytes", pos);
-    cout<<"Socket::read - buf received: "<<pos<<" bytes\n";
 
     int ret = cbRead_(rdBuf_, pos, this);
     if (closed)
@@ -136,7 +137,7 @@ int ServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     string recvBuf(buf, size);
     cout<<"read "<<size<<" bytes:"<<buf<<endl;
-    log_debug("read %d bytes - [%s]", size, buf);
+    log_info("read %d bytes - [%s]", size, buf);
     return 1;
 }
 

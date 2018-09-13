@@ -67,7 +67,8 @@ int parse_arg(int argc, char* argv[])
 int readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     string data(buf, size);
-    log_debug("readCallBack:\n%s", data.c_str());
+    log_debug("readCallBack %di bytes", size);
+    log_trace("readCallBack Data:\n%s", data.c_str());
     return 0;
 }
 
@@ -99,7 +100,7 @@ void MainThread::workBody()
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    Timer *timer1 = new Timer(5000, &Timer1Callback);
+    Timer *timer1 = new Timer(30000, &Timer1Callback);
     mainServer.addTimer(timer1);
     // Timer *timer2 = new Timer(3000, &Timer2Callback);
     // mainServer.addTimer(timer2);
@@ -131,9 +132,10 @@ int main(int argc, char* argv[])
     string port = pConfig->get("port", std::to_string(DEFAULT_PORT));
     serverPort = stoi(port);
     string logFile = pConfig->get("log_file", "httpd.log");
+    string logLevel = pConfig->get("log_level", "INFO");
 
     // Open log
-    log_open(logFile.c_str());
+    log_open(logFile.c_str(), Logger::getLevel(logLevel));
 
     Thread *main = new MainThread();
 
