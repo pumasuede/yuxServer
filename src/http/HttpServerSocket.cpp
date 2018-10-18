@@ -78,11 +78,11 @@ void HttpServerThread::workBody()
 
         bool parseRet = httpParser_.parse(httpReq, req.data.c_str(), req.data.size());
         const string& uri = httpReq.startLine.URI;
-        log_debug("Process http request seq:%d %s\n", req.seq, uri.c_str());
+        log_debug("Process http request seq:%d %s", req.seq, uri.c_str());
 
         if (!parseRet)
         {
-            log_debug("parse http error");
+            log_error("parse http error");
             Server::getInstance().closeSocket(req.fd);
             continue;
         }
@@ -91,24 +91,64 @@ void HttpServerThread::workBody()
         SocketBase *sock = Server::getInstance().getSocketByFd(req.fd);
         if (sock == nullptr)
         {
-            log_debug("The socket on fd %d is already closed, nothing to do", req.fd);
+            log_error("The socket on fd %d is already closed, nothing to do", req.fd);
             return;
         }
 
         sock->sendStr("HTTP/1.1 200 OK\r\n");
-        sock->sendStr("Connection: Kepp-Alive\r\n");
-        sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");
-        sock->sendStr("Server: yuhttpd\r\n\r\n");
+        sock->sendStr("Server: yuhttpd\r\n");
 
-        string localFile = pServerSock_->getDocRoot() + uri;
+        int posQueryString = uri.find_last_of("?");
+        bool hasQueryString = posQueryString != string::npos;
+
+        string scriptName = hasQueryString ? uri.substr(0, posQueryString): uri;
+        string queryString = hasQueryString ? uri.substr(posQueryString+1) : "";
+        string localFile = pServerSock_->getDocRoot() + scriptName;
 
         string line;
         ifstream file(localFile.c_str());
         if (file.is_open())
         {
-            while (getline(file,line))
+            // process php script
+            if (scriptName.substr(uri.find_last_of('.') + 1) == "php")
             {
-                sock->sendStr(line);
+                // call fasct CGI to process php script
+                log_debug("Process PHP script by FastCGI\n");
+
+                fastCgi_.startConnect();
+                fastCgi_.setParams("SCRIPT_FILENAME", localFile);
+                fastCgi_.setParams("QUERY_STRING", queryString);
+                fastCgi_.setParams("REQUEST_METHOD", httpReq.startLine.method);
+                fastCgi_.setParams("CONTENT_TYPE", httpReq.header["Content-Type"]);
+                fastCgi_.setParams("CONTENT_LENGTH", httpReq.header["Content-Length"]);
+                fastCgi_.setParams("SCRIPT_NAME", scriptName);
+                fastCgi_.setParams("REQUEST_URI", uri);
+                fastCgi_.setParams("DOCUMENT_URI", uri);
+                fastCgi_.setParams("DOCUMENT_ROOT", pServerSock_->getDocRoot());
+                fastCgi_.setParams("SERVER_PROTOCOL", "HTTP/1.1");
+                fastCgi_.setParams("GATEWAY_INTERFACE", "CGI/1.1");
+                fastCgi_.setParams("SERVER_SOFTWARE", "yuHttpd/1.0");
+                fastCgi_.setParams("HTTP_ACCEPT", httpReq.header["Accept"]);
+                if (httpReq.startLine.method == "POST" || httpReq.startLine.method == "PUT")
+                {
+                    log_trace("send %s data: %s", httpReq.startLine.method.c_str(), httpReq.body.c_str());
+                    fastCgi_.setPostData(httpReq.body);
+                }
+                fastCgi_.sendRequest();
+
+                fastCgi_.readFromPhp(sock);
+
+                fastCgi_.close();
+            }
+            else
+            {
+                sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");
+                sock->sendStr("Connection: Keep-Alive\r\n");
+                sock->sendStr("\r\n");
+                while (getline(file,line))
+                {
+                    sock->sendStr(line);
+                }
             }
             file.close();
         }

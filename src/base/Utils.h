@@ -12,6 +12,7 @@ namespace base{
 
 std::string getFormatTime();
 std::string trim(const std::string& str);
+void writeNum(unsigned char* dest, unsigned int number, int bytes);
 
 struct Timer
 {

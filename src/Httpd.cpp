@@ -67,7 +67,7 @@ int parse_arg(int argc, char* argv[])
 int readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
     string data(buf, size);
-    log_debug("readCallBack %di bytes", size);
+    log_debug("readCallBack %d bytes", size);
     log_trace("readCallBack Data:\n%s", data.c_str());
     return 0;
 }
@@ -100,7 +100,7 @@ void MainThread::workBody()
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    Timer *timer1 = new Timer(30000, &Timer1Callback);
+    Timer *timer1 = new Timer(300000, &Timer1Callback);
     mainServer.addTimer(timer1);
     // Timer *timer2 = new Timer(3000, &Timer2Callback);
     // mainServer.addTimer(timer2);

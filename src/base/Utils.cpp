@@ -89,4 +89,25 @@ string trim(const string& str)
     return str.substr(first, (last - first + 1));
 }
 
+void writeNum(unsigned char* dest, unsigned int number, int bytes)
+{
+    if( 1 == bytes )
+    {
+        *dest = static_cast<unsigned char>(number & 0x7f);
+    }
+    else if( 2 == bytes )
+    {
+        *dest = static_cast<unsigned char>((number >> 8) & 0xff);
+        *(dest + 1) = static_cast<unsigned char>(number & 0xff);
+    }
+    else if( 4 == bytes )
+    {
+        *dest = static_cast<unsigned char>((number >> 24) & 0xff);
+        *(dest + 1) = static_cast<unsigned char>((number >> 16) & 0xff);
+        *(dest + 2) = static_cast<unsigned char>((number >> 8) & 0xff);
+        *(dest + 3) = static_cast<unsigned char>(number & 0xff);
+        *dest |= 0x80;
+    }
+}
+
 }} //name space

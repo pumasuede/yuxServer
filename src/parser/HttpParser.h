@@ -21,7 +21,7 @@ struct HttpRequest
 {
     HttpReqStartLine startLine;
     std::map<std::string, std::string> header;
-    std::map<std::string, std::string> postData;
+    std::string body;
 };
 
 class HttpLineParser

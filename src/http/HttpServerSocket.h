@@ -9,6 +9,7 @@
 #include "base/Thread.h"
 #include "base/Socket.h"
 #include "parser/HttpParser.h"
+#include "fastcgi/fcgi.h"
 
 namespace yux{
 namespace http{
@@ -37,11 +38,12 @@ private:
 class HttpServerThread : public yux::base::Thread
 {
 public:
-    HttpServerThread(const std::string& name, HttpServerSocket *pServerSock) : yux::base::Thread(name), pServerSock_(pServerSock) {}
+    HttpServerThread(const std::string& name, HttpServerSocket *pServerSock) : yux::base::Thread(name), pServerSock_(pServerSock), fastCgi_("127.0.0.1") { }
     void setServerSocket(HttpServerSocket* pServerSock) { pServerSock_ = pServerSock; }
     virtual void workBody();
     friend class HttpServerSocket;
 private:
+    FastCgi   fastCgi_;
     HttpServerSocket* pServerSock_;
     yux::parser::HttpRequestParser httpParser_;
     static std::mutex mutex_;

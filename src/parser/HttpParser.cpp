@@ -3,8 +3,10 @@
 #include <regex>
 
 #include "HttpParser.h"
+#include "base/Log.h"
 
 using namespace std;
+using namespace yux::base;
 
 namespace yux{
 namespace parser{
@@ -25,6 +27,14 @@ HttpReqStartLine HttpReqLineParser::parseStartLine()
 
 void HttpLineParser::parseOption(string& name, string& value)
 {
+    int sep = lineBuf_.find(':');
+    if (sep != string::npos)
+    {
+        name = lineBuf_.substr(0, sep);
+        value = lineBuf_.substr(sep+2); //skip the space after :
+    }
+
+    log_trace("Parsed header line: %s | %s", name.c_str(), value.c_str());
 }
 
 bool HttpReqLineParser::parse(HttpRequest& req)
@@ -47,18 +57,22 @@ bool HttpRequestParser::parse(HttpRequest& req, const char *buf, uint32_t size)
 {
     std::cout<<"ready to parse http...\n";
     int i=0, begin=0;
+    bool isBody = false;
 
     while (i<size)
     {
-        if (i==begin && !isalpha(buf[i]))
-        {
-            i++;
-            begin = i;
-            continue;
-        }
-
         if (buf[i]=='\r' && buf[i+1]=='\n')
         {
+            if (begin == i)
+            {
+                // The line has only '\r\n', which means it's the boundary between header and body.
+                isBody = true;
+                req.body = std::move(string(buf+i+2, size-i-2));
+                log_trace("Parsed Body:\n%s", req.body.c_str());
+                return true;
+            }
+
+            // Parse line;
             HttpReqLineParser lineParser(buf+begin, i-begin);
             if (!lineParser.parse(req))
             {
