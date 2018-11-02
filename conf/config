@@ -14,3 +14,7 @@ log_level = DEBUG
 # log_file
 # Log file name
 log_file = httpd.log
+
+# mime_file
+# MIME file name. This file associates MIME types with file extension type
+mime_file = mime.types

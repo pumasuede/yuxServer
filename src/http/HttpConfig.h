@@ -1,22 +1,23 @@
-#ifndef __YUX_CONFIG_H__
-#define __YUX_CONFIG_H__
+#ifndef __YUX_HTTP_CONFIG_H__
+#define __YUX_HTTP_CONFIG_H__
 
 #include <unordered_map>
-#include "Singleton.h"
+#include "base/Singleton.h"
 
 namespace yux {
-namespace base {
+namespace http {
 
 // Config define
-class Config : public Singleton<Config>
+
+class MimeConfig : public yux::base::Singleton<MimeConfig>
 {
-    friend class Singleton<Config>;
+    friend class yux::base::Singleton<MimeConfig>;
     public:
         void loadConfigFile(const std::string& file) { file_ = file; load(); }
         bool exist(const std::string& key) { return config_.find(key) != config_.end(); }
         std::string get(const std::string& key, const std::string& defaultValue) { return exist(key) ? config_[key] : defaultValue; }
     private:
-        Config() {}
+        MimeConfig() {}
         void load();
         std::string file_;
         std::unordered_map<std::string, std::string> config_;

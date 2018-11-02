@@ -15,6 +15,9 @@ struct HttpReqStartLine
     std::string method;
     std::string URI;
     std::string version;
+    // component of URI.
+    std::string scriptName;
+    std::string queryString;
 };
 
 struct HttpRequest

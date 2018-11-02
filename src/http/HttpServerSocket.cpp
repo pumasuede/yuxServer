@@ -6,8 +6,10 @@
 #include <fstream>
 
 #include "HttpServerSocket.h"
-#include "base/Server.h"
+#include "HttpConfig.h"
 #include "base/Log.h"
+#include "base/Config.h"
+#include "base/Server.h"
 
 using namespace std;
 using namespace yux::base;
@@ -18,11 +20,20 @@ namespace http{
 
 std::mutex HttpServerThread::mutex_;
 std::condition_variable HttpServerThread::cv_;
+std::mutex HttpServerThread::socketMutex_;
 
 HttpServerSocket* HttpServerSocket::create(const string& host, uint16_t port)
 {
     HttpServerSocket* pSock = new HttpServerSocket(host, port);
     pSock->setCbRead(std::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
+
+    string docRoot = Config::getInstance()->get("document_root", ".");
+    string mimeFile = Config::getInstance()->get("mime_file", "mime_types");
+    pSock->setDocRoot(docRoot);
+    pSock->setMimeFile(mimeFile);
+
+    MimeConfig* pMiMeConfig = MimeConfig::getInstance();
+    pMiMeConfig->loadConfigFile(mimeFile);
     return pSock;
 }
 
@@ -31,37 +42,87 @@ void HttpServerSocket::setDocRoot(const string& docRoot)
     docRoot_ = docRoot;
 }
 
+void HttpServerSocket::setMimeFile(const string& mimeFile)
+{
+    mimeFile_ = mimeFile;
+}
+
 int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
+    static int seq = 1;
     static string recvData;
     string tmpData(buf, size);
-    log_trace("\n<RAW tmp data>:\n%s", tmpData.c_str());
     recvData += tmpData;
+    log_trace("\n<RAW tmp data>:%s...\n", tmpData.substr(0, 20).c_str());
     if (tmpData.find("\r\n\r\n") == string::npos)
     {
         log_debug("Wait for more data");
         return 0;
     }
 
-    static int n = 0;
     Req req;
-    req.seq = n++;
     req.fd = sock->fd();
     req.data = recvData;
-    log_trace("\n<Recv HTTP seq:%d fd:%d>:\n%s", req.seq, req.fd, recvData.c_str());
+    log_trace("\n<Recv HTTP seq:%d fd:%d>:\n%s", seq, req.fd, recvData.c_str());
     if (recvData.size() > 0)
     {
         lock_guard<std::mutex> lock(HttpServerThread::mutex_);
+        req.seq = seq++;
         reqList_.push_back(req);
         HttpServerThread::cv_.notify_all();
     }
-
     recvData.clear();
+}
+
+void HttpServerThread::handleScript(HttpRequest& httpReq)
+{
+    // Check if the socket is still valid in case it's closed by remote peer.
+    SocketBase *sock = Server::getInstance().getSocketByFd(req_.fd);
+    if (sock == nullptr)
+    {
+        log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
+        return;
+    }
+
+    const string& scriptName = httpReq.startLine.scriptName;
+    const string& queryString = httpReq.startLine.queryString;
+
+    string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
+    string localFile = pServerSock_->getDocRoot() + scriptName;
+
+    // call fasct CGI to process php script
+    log_debug("Preparing to run script - %s", scriptName.c_str());
+    fastCgi_.setPort(fileExt == "php" ? 9000: 9100);
+    fastCgi_.setRequestId(req_.seq);
+
+    fastCgi_.setParams("SCRIPT_FILENAME", localFile);
+    fastCgi_.setParams("QUERY_STRING", queryString);
+    fastCgi_.setParams("REQUEST_METHOD", httpReq.startLine.method);
+    fastCgi_.setParams("CONTENT_TYPE", httpReq.header["Content-Type"]);
+    fastCgi_.setParams("CONTENT_LENGTH", httpReq.header["Content-Length"]);
+    fastCgi_.setParams("SCRIPT_NAME", scriptName);
+    fastCgi_.setParams("DOCUMENT_URI", httpReq.startLine.URI);
+    fastCgi_.setParams("DOCUMENT_ROOT", pServerSock_->getDocRoot());
+    fastCgi_.setParams("SERVER_PROTOCOL", "HTTP/1.1");
+    fastCgi_.setParams("GATEWAY_INTERFACE", "CGI/1.1");
+    fastCgi_.setParams("SERVER_SOFTWARE", "yuHttpd/1.0");
+    fastCgi_.setParams("HTTP_HOST", httpReq.header["Host"]);
+    fastCgi_.setParams("HTTP_USER_AGENT", httpReq.header["User-Agent"]);
+    fastCgi_.setParams("HTTP_ACCEPT", httpReq.header["Accept"]);
+
+    if (httpReq.startLine.method == "POST" || httpReq.startLine.method == "PUT")
+    {
+        log_trace("send %s data: %s", httpReq.startLine.method.c_str(), httpReq.body.c_str());
+        fastCgi_.setPostData(httpReq.body);
+    }
+
+    fastCgi_.sendRequest();
+    fastCgi_.readFromCGI(sock);
+    fastCgi_.endRequest();
 }
 
 void HttpServerThread::workBody()
 {
-    Req req;
     list<Req>& reqList = pServerSock_->getReqList();
 
     while (1)
@@ -70,84 +131,71 @@ void HttpServerThread::workBody()
             unique_lock<std::mutex> lock(mutex_);
             cv_.wait(lock, [&]{return reqList.size() > 0;});
 
-            req = reqList.front();
+            req_ = reqList.front();
             reqList.pop_front();
         }
 
         HttpRequest httpReq;
 
-        bool parseRet = httpParser_.parse(httpReq, req.data.c_str(), req.data.size());
+        bool parseRet = httpParser_.parse(httpReq, req_.data.c_str(), req_.data.size());
         const string& uri = httpReq.startLine.URI;
-        log_debug("Process http request seq:%d %s", req.seq, uri.c_str());
+        log_debug("Process http request seq:%d uri:%s", req_.seq, uri.c_str());
 
         if (!parseRet)
         {
             log_error("parse http error");
-            Server::getInstance().closeSocket(req.fd);
+            lock_guard<std::mutex> lock(HttpServerThread::socketMutex_);
+            Server::getInstance().closeSocket(req_.fd);
             continue;
         }
 
+        SocketBase *sock;
+
         // Check if the socket is still valid in case it's closed by remote peer.
-        SocketBase *sock = Server::getInstance().getSocketByFd(req.fd);
+        {
+            lock_guard<std::mutex> lock(HttpServerThread::socketMutex_);
+            sock = Server::getInstance().getSocketByFd(req_.fd);
+        }
+
         if (sock == nullptr)
         {
-            log_error("The socket on fd %d is already closed, nothing to do", req.fd);
+            log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
             return;
         }
 
         sock->sendStr("HTTP/1.1 200 OK\r\n");
         sock->sendStr("Server: yuhttpd\r\n");
 
-        int posQueryString = uri.find_last_of("?");
-        bool hasQueryString = posQueryString != string::npos;
-
-        string scriptName = hasQueryString ? uri.substr(0, posQueryString): uri;
-        string queryString = hasQueryString ? uri.substr(posQueryString+1) : "";
+        const string& scriptName = httpReq.startLine.scriptName;
         string localFile = pServerSock_->getDocRoot() + scriptName;
 
-        string line;
-        ifstream file(localFile.c_str());
+        string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
+        bool isBin = isBinary(fileExt);
+        ifstream file(localFile.c_str(), isBin ? ios::binary : ios::in);
+
         if (file.is_open())
         {
             // process php script
-            if (scriptName.substr(uri.find_last_of('.') + 1) == "php")
+            if (fileExt == "php" || fileExt == "cgi")
             {
-                // call fasct CGI to process php script
-                log_debug("Process PHP script by FastCGI\n");
-
-                fastCgi_.startConnect();
-                fastCgi_.setParams("SCRIPT_FILENAME", localFile);
-                fastCgi_.setParams("QUERY_STRING", queryString);
-                fastCgi_.setParams("REQUEST_METHOD", httpReq.startLine.method);
-                fastCgi_.setParams("CONTENT_TYPE", httpReq.header["Content-Type"]);
-                fastCgi_.setParams("CONTENT_LENGTH", httpReq.header["Content-Length"]);
-                fastCgi_.setParams("SCRIPT_NAME", scriptName);
-                fastCgi_.setParams("REQUEST_URI", uri);
-                fastCgi_.setParams("DOCUMENT_URI", uri);
-                fastCgi_.setParams("DOCUMENT_ROOT", pServerSock_->getDocRoot());
-                fastCgi_.setParams("SERVER_PROTOCOL", "HTTP/1.1");
-                fastCgi_.setParams("GATEWAY_INTERFACE", "CGI/1.1");
-                fastCgi_.setParams("SERVER_SOFTWARE", "yuHttpd/1.0");
-                fastCgi_.setParams("HTTP_ACCEPT", httpReq.header["Accept"]);
-                if (httpReq.startLine.method == "POST" || httpReq.startLine.method == "PUT")
-                {
-                    log_trace("send %s data: %s", httpReq.startLine.method.c_str(), httpReq.body.c_str());
-                    fastCgi_.setPostData(httpReq.body);
-                }
-                fastCgi_.sendRequest();
-
-                fastCgi_.readFromPhp(sock);
-
-                fastCgi_.close();
+                handleScript(httpReq);
             }
             else
             {
-                sock->sendStr("Content-Type: text/html; charset=utf-8\r\n");
+                log_debug("Process static file request\n");
+                string contentType = MimeConfig::getInstance()->get(fileExt, "");
+                int filesize = getFileSize(localFile);
+
+                sock->sendStr("Content-Type: " + contentType + "\r\n");
+                sock->sendStr("Content-Length: " + to_string(filesize) + "\r\n");
                 sock->sendStr("Connection: Keep-Alive\r\n");
                 sock->sendStr("\r\n");
-                while (getline(file,line))
+
+                char buf[1024];
+                while (!file.eof())
                 {
-                    sock->sendStr(line);
+                    size_t readLen = file.read(buf, 1024).gcount();
+                    sock->send((uint8_t*)buf, readLen);
                 }
             }
             file.close();
@@ -157,7 +205,12 @@ void HttpServerThread::workBody()
             sock->sendStr("Can't find Request URL "+ uri +" !<br>\n");
         }
 
-        Server::getInstance().closeSocket(req.fd);
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            Server::getInstance().closeSocket(req_.fd);
+        }
+
+        log_debug("Handle request done, exit workBody\n");
     }
 }
 

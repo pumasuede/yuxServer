@@ -37,7 +37,7 @@ int Logger::open(int fd, int level)
     struct stat st;
     if (fstat(fd_, &st) == -1)
     {
-        fprintf(stderr, "fstat log file %s error!", filename_.c_str());
+        fprintf(stderr, "fstat log file %s error!", fileName_.c_str());
         return -1;
     }
 
@@ -46,39 +46,40 @@ int Logger::open(int fd, int level)
     return 0;
 }
 
-int Logger::open(const std::string& filename, int level, uint64_t rotateSize)
+int Logger::open(const std::string& fileName, int level, uint64_t rotateSize)
 {
-    if (filename.size() > PATH_MAX - 20)
+    if (fileName.size() > PATH_MAX - 20)
     {
-        fprintf(stderr, "log filename too long!");
+        fprintf(stderr, "log fileName too long!");
         return -1;
     }
 
-    filename_ = filename;
+    fileName_ = fileName;
+    level = level;
     rotateSize_ = rotateSize;
 
     int fd;
 
-    if (filename == "stdout")
+    if (fileName == "stdout")
     {
         fd = 1;
     }
-    else if (filename == "stderr")
+    else if (fileName == "stderr")
     {
         fd = 2;
     }
-    else if (access(filename.c_str(), F_OK) != -1)
+    else if (access(fileName.c_str(), F_OK) != -1)
     {
-        fd = ::open(filename_.c_str(), O_RDWR|O_APPEND);
+        fd = ::open(fileName_.c_str(), O_RDWR|O_APPEND);
     }
     else
     {
-        fd = ::open(filename_.c_str(), O_RDWR|O_CREAT, 0755);
+        fd = ::open(fileName_.c_str(), O_RDWR|O_CREAT, 0755);
     }
 
     if (fd == -1)
     {
-        fprintf(stderr, "Can't open log file:%s\n", filename_.c_str());
+        fprintf(stderr, "Can't open log file:%s\n", fileName_.c_str());
         return -1;
     }
 
@@ -101,19 +102,19 @@ void Logger::rotate()
     time = tv.tv_sec;
     tm = localtime(&time);
     sprintf(newPath, "%s.%04d%02d%02d-%02d:%02d:%02d-%d",
-            filename_.c_str(),
+            fileName_.c_str(),
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
             tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec);
-    printf("rename %s => %s\n", filename_.c_str(), newPath);
+    printf("rename %s => %s\n", fileName_.c_str(), newPath);
 
-    int ret = rename(filename_.c_str(), newPath);
+    int ret = rename(fileName_.c_str(), newPath);
     if(ret == -1)
     {
-        fprintf(stderr, "rename %s error!", filename_.c_str());
+        fprintf(stderr, "rename %s error!", fileName_.c_str());
         return;
     }
 
-    fd_ = ::open(filename_.c_str(), O_RDWR|O_APPEND);
+    fd_ = ::open(fileName_.c_str(), O_RDWR|O_APPEND);
     if (fd_ == -1)
     {
         return;
@@ -223,6 +224,14 @@ int Logger::logv(int level, const char *fmt, va_list ap)
     *ptr = '\0';
 
     len = ptr - buf;
+
+    struct stat statBuf;
+    fstat(fd_, &statBuf);
+    if (statBuf.st_nlink <= 0)
+    {
+        open(fileName_, level_, rotateSize_);
+    }
+
     ::write(fd_, buf, len);
 
     stats_.w_curr += len;

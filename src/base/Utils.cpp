@@ -1,4 +1,8 @@
 #include "Utils.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <stdio.h>
 
 namespace yux{
@@ -108,6 +112,22 @@ void writeNum(unsigned char* dest, unsigned int number, int bytes)
         *(dest + 3) = static_cast<unsigned char>(number & 0xff);
         *dest |= 0x80;
     }
+}
+
+int getFileSize(const std::string& filename)
+{
+     struct stat stat_buf;
+     int rc = stat(filename.c_str(), &stat_buf);
+     return rc == 0 ? stat_buf.st_size : -1;
+}
+
+bool isBinary(const std::string& fileExt)
+{
+    if (fileExt == "jpg"
+        || fileExt == "gif"
+        || fileExt == "png")
+        return true;
+    return false;
 }
 
 }} //name space

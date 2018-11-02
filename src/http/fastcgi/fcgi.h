@@ -12,8 +12,11 @@ namespace http{
 class FastCgi
 {
 public:
-    FastCgi(const std::string& ip);
+    FastCgi(const std::string& ip = "127.0.0.1", uint16_t port = 9000);
     ~FastCgi();
+
+    void setIP(const std::string& ip) { ip_ = ip; }
+    void setPort(uint16_t port) { port_ = port; }
 
     void setRequestId(int requestId) { requestId_ = requestId; }
     FCGI_Header makeHeader(int type,int request,
@@ -27,16 +30,17 @@ public:
     void startConnect();
     void close();
     void setStartRequestRecord();
-    void setEndRequestRecord();
     void setParams(std::string name, std::string value);
     void setPostData(const std::string& data);
     void sendRequest();
-    void readFromPhp(yux::base::SocketBase *pClientSock = nullptr);
+    void endRequest();
+    void readFromCGI(yux::base::SocketBase *pClientSock = nullptr);
 
 private:
-    std::string ip_;   // IP of php-fpm
-    int sockFd_;       // sockfd for php-fpm
-    int requestId_;    // recorde ID
+    std::string ip_;   // IP of fastcgi process manager
+    uint16_t port_;    // Port of fastcgi process manager
+    int sockFd_;       // sockfd
+    int requestId_;    // record ID
     std::string reqBuff_;
     int paramBodyLen_;
     std::string paramBody_;

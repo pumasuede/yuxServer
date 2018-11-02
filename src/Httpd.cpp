@@ -107,9 +107,6 @@ void MainThread::workBody()
 
     HttpServerSocket* httpServerSock = HttpServerSocket::create(serverIP, serverPort);
     mainServer.addServerSocket(httpServerSock);
-    string docRoot = Config::getInstance()->get("document_root", ".");
-
-    httpServerSock->setDocRoot(docRoot);
 
     const int httpWorkThreadNum = 5;
     for (int i = 0; i < httpWorkThreadNum; i++)
@@ -133,10 +130,10 @@ int main(int argc, char* argv[])
     serverPort = stoi(port);
     string logFile = pConfig->get("log_file", "httpd.log");
     string logLevel = pConfig->get("log_level", "INFO");
-
     // Open log
     log_open(logFile.c_str(), Logger::getLevel(logLevel));
 
+    log_info("config file :%s", configFile.c_str());
     Thread *main = new MainThread();
 
     main->start();

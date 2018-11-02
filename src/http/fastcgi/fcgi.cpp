@@ -18,7 +18,7 @@ using namespace yux::base;
 namespace yux{
 namespace http{
 
-FastCgi::FastCgi(const string& ip) : ip_(ip)
+FastCgi::FastCgi(const string& ip, uint16_t port) : ip_(ip), port_(port)
 {
     sockFd_ = 0;
     requestId_ = 0;
@@ -112,10 +112,9 @@ void FastCgi::startConnect()
     struct sockaddr_in server_address;
     bzero(&server_address,sizeof(server_address));
 
-
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = inet_addr(ip_.c_str());
-    server_address.sin_port = htons(9000);
+    server_address.sin_port = htons(port_);
 
     sockFd_ = socket(AF_INET, SOCK_STREAM, 0);
     int result = connect(sockFd_, (struct sockaddr*)&server_address, sizeof(server_address));
@@ -128,6 +127,7 @@ void FastCgi::startConnect()
 void FastCgi::close()
 {
     ::close(sockFd_);
+    sockFd_ = 0;
 }
 
 void FastCgi::setStartRequestRecord()
@@ -135,13 +135,13 @@ void FastCgi::setStartRequestRecord()
     reqBuff_.clear();
 
     FCGI_BeginRequestRecord beginRecord;
-    beginRecord.header = makeHeader(FCGI_BEGIN_REQUEST, ++requestId_, sizeof(beginRecord.body), 0);
+    beginRecord.header = makeHeader(FCGI_BEGIN_REQUEST, requestId_, sizeof(beginRecord.body), 0);
     beginRecord.body = makeBeginRequestBody(FCGI_RESPONDER, 0);
 
     reqBuff_ += string((char*)&beginRecord, sizeof(beginRecord));
 }
 
-void FastCgi::setEndRequestRecord(void)
+void FastCgi::endRequest(void)
 {
     reqBuff_.clear();
 
@@ -150,6 +150,8 @@ void FastCgi::setEndRequestRecord(void)
     endRecord.body = makeEndRequestBody(0, FCGI_REQUEST_COMPLETE);
 
     reqBuff_ += string((char*)&endRecord, sizeof(endRecord));
+    write(sockFd_, reqBuff_.c_str(), reqBuff_.size());
+    close();
 }
 
 void FastCgi::setParams(std::string name, std::string value)
@@ -168,6 +170,7 @@ void FastCgi::setPostData(const std::string& data)
 
 void FastCgi::sendRequest()
 {
+    log_debug("Send script to FastCGI manager. requestId_=%d", requestId_);
     // Start request
     setStartRequestRecord();
 
@@ -189,10 +192,11 @@ void FastCgi::sendRequest()
     dataHeader = makeHeader(FCGI_STDIN, requestId_, 0, 0);
     reqBuff_ += string((char*)&dataHeader, FCGI_HEADER_LEN);
 
+    startConnect();
     write(sockFd_, reqBuff_.c_str(), reqBuff_.size());
 }
 
-void FastCgi::readFromPhp(yux::base::SocketBase *pClientSock)
+void FastCgi::readFromCGI(yux::base::SocketBase *pClientSock)
 {
     FCGI_Header responderHeader;
     static uint8_t content[CONTENT_BUFF_LEN];
@@ -220,7 +224,7 @@ void FastCgi::readFromPhp(yux::base::SocketBase *pClientSock)
                 if (ret)
                 {
                     readBytes += ret;
-                    log_trace("PHP content:\n%s", content);
+                    log_trace("processed CGI content:\n%s", content);
                     pClientSock->send(content, ret);
                 }
                 else if (ret < 0)

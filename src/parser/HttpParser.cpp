@@ -22,6 +22,14 @@ HttpReqStartLine HttpReqLineParser::parseStartLine()
     HttpReqStartLine startLine;
     std::stringstream lineStream(lineBuf_);
     lineStream>>startLine.method>>startLine.URI>>startLine.version;
+
+    const string& uri = startLine.URI;
+    int posQueryString = uri.find_last_of("?");
+    bool hasQueryString = posQueryString != string::npos;
+
+    startLine.scriptName = hasQueryString ? uri.substr(0, posQueryString): uri;
+    startLine.queryString = hasQueryString ? uri.substr(posQueryString+1) : "";
+
     return startLine;
 }
 

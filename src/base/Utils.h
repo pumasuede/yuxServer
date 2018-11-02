@@ -13,6 +13,8 @@ namespace base{
 std::string getFormatTime();
 std::string trim(const std::string& str);
 void writeNum(unsigned char* dest, unsigned int number, int bytes);
+int getFileSize(const std::string& filename);
+bool isBinary(const std::string& fileExt);
 
 struct Timer
 {
@@ -45,7 +47,6 @@ struct URLParser{
     uint16_t    port_;
     std::string path_;
     std::string query_;
-
 };
 
 }}//namespace

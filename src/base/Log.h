@@ -46,7 +46,7 @@ class Logger
         static int getLevel(const std::string& levelname);
 
     private:
-        std::string filename_;
+        std::string fileName_;
         int fd_;
         int level_;
         std::mutex mutex_;
