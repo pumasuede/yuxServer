@@ -17,6 +17,7 @@ namespace http{
 typedef struct Req{
     uint32_t seq;
     int fd;
+    yux::base::SocketBase* sock;
     std::string data;
 } Req;
 

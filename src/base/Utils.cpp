@@ -121,13 +121,9 @@ int getFileSize(const std::string& filename)
      return rc == 0 ? stat_buf.st_size : -1;
 }
 
-bool isBinary(const std::string& fileExt)
+bool isBinary(const std::string& contentType)
 {
-    if (fileExt == "jpg"
-        || fileExt == "gif"
-        || fileExt == "png")
-        return true;
-    return false;
+    return contentType.find("text/") == string::npos;
 }
 
 }} //name space

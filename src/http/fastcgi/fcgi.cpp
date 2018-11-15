@@ -143,6 +143,8 @@ void FastCgi::setStartRequestRecord()
 
 void FastCgi::endRequest(void)
 {
+    paramBody_.clear();
+    data_.clear();
     reqBuff_.clear();
 
     FCGI_EndRequestRecord endRecord;
@@ -257,11 +259,12 @@ void FastCgi::readFromCGI(yux::base::SocketBase *pClientSock)
                 if (ret)
                 {
                     readBytes += ret;
-                    log_error("Error: %s", content);
+                    log_error("Process CGI error: %s", content);
+                    pClientSock->send(content, ret);
                 }
                 else if (ret < 0)
                 {
-                    log_error("Error: %s", strerror(errno));
+                    log_error("Process CGI error: %s", strerror(errno));
                     break;
                 }
                 else

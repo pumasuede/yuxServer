@@ -53,7 +53,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     static string recvData;
     string tmpData(buf, size);
     recvData += tmpData;
-    log_trace("\n<RAW tmp data>:%s...\n", tmpData.substr(0, 20).c_str());
+    log_trace("  <RAW tmp data>:%s...\n", tmpData.substr(0, 30).c_str());
     if (tmpData.find("\r\n\r\n") == string::npos)
     {
         log_debug("Wait for more data");
@@ -62,8 +62,10 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
 
     Req req;
     req.fd = sock->fd();
+    req.sock = sock;
     req.data = recvData;
     log_trace("\n<Recv HTTP seq:%d fd:%d>:\n%s", seq, req.fd, recvData.c_str());
+
     if (recvData.size() > 0)
     {
         lock_guard<std::mutex> lock(HttpServerThread::mutex_);
@@ -71,19 +73,12 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
         reqList_.push_back(req);
         HttpServerThread::cv_.notify_all();
     }
+
     recvData.clear();
 }
 
 void HttpServerThread::handleScript(HttpRequest& httpReq)
 {
-    // Check if the socket is still valid in case it's closed by remote peer.
-    SocketBase *sock = Server::getInstance().getSocketByFd(req_.fd);
-    if (sock == nullptr)
-    {
-        log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
-        return;
-    }
-
     const string& scriptName = httpReq.startLine.scriptName;
     const string& queryString = httpReq.startLine.queryString;
 
@@ -117,7 +112,7 @@ void HttpServerThread::handleScript(HttpRequest& httpReq)
     }
 
     fastCgi_.sendRequest();
-    fastCgi_.readFromCGI(sock);
+    fastCgi_.readFromCGI(req_.sock);
     fastCgi_.endRequest();
 }
 
@@ -157,24 +152,25 @@ void HttpServerThread::workBody()
             sock = Server::getInstance().getSocketByFd(req_.fd);
         }
 
-        if (sock == nullptr)
+        if (sock == nullptr || sock != req_.sock)
         {
             log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
             return;
         }
 
-        sock->sendStr("HTTP/1.1 200 OK\r\n");
-        sock->sendStr("Server: yuhttpd\r\n");
 
         const string& scriptName = httpReq.startLine.scriptName;
         string localFile = pServerSock_->getDocRoot() + scriptName;
 
         string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
-        bool isBin = isBinary(fileExt);
+        string contentType = MimeConfig::getInstance()->get(fileExt, "");
+        bool isBin = isBinary(contentType);
         ifstream file(localFile.c_str(), isBin ? ios::binary : ios::in);
 
         if (file.is_open())
         {
+            sock->sendStr("HTTP/1.1 200 OK\r\n");
+            sock->sendStr("Server: yuhttpd\r\n");
             // process php script
             if (fileExt == "php" || fileExt == "cgi")
             {
@@ -182,26 +178,36 @@ void HttpServerThread::workBody()
             }
             else
             {
-                log_debug("Process static file request\n");
-                string contentType = MimeConfig::getInstance()->get(fileExt, "");
-                int filesize = getFileSize(localFile);
+                // process static request
+                int fileSize = getFileSize(localFile);
+                log_debug("Process static %s file request. file size: %d\n", isBin ? "binary" : "text", fileSize);
 
                 sock->sendStr("Content-Type: " + contentType + "\r\n");
-                sock->sendStr("Content-Length: " + to_string(filesize) + "\r\n");
+
+                if (isBin)
+                {
+                    sock->sendStr("Content-Length: " + to_string(fileSize) + "\r\n");
+                }
                 sock->sendStr("Connection: Keep-Alive\r\n");
+
                 sock->sendStr("\r\n");
 
-                char buf[1024];
-                while (!file.eof())
+                std::array<char, 4096> buf;
+                int bufSize = buf.size();
+
+                while (file.good())
                 {
-                    size_t readLen = file.read(buf, 1024).gcount();
-                    sock->send((uint8_t*)buf, readLen);
+                    size_t readLen = file.read(buf.data(), bufSize).gcount();
+                    sock->write((uint8_t*)buf.data(), readLen);
                 }
             }
             file.close();
         }
         else
         {
+            // Todo return 404
+            sock->sendStr("HTTP/1.1 404 OK\r\n");
+            sock->sendStr("Server: yuhttpd\r\n");
             sock->sendStr("Can't find Request URL "+ uri +" !<br>\n");
         }
 

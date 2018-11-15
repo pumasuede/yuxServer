@@ -178,7 +178,6 @@ void Server::loopOnce()
         }
         else if (fde->writable())
         {
-            skt->write();
             fdes_->delWatch(fd, Fde::WRITE);
         }
     }

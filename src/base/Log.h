@@ -92,7 +92,7 @@ int log_write(int level, const char *fmt, ...);
 #define log_trace(fmt, args...) do{}while(0)
 #else
 #define log_trace(fmt, args...) \
-    log_write(yux::base::Logger::LEVEL_TRACE, "(%d): " fmt,  __LINE__, ##args)
+    log_write(yux::base::Logger::LEVEL_TRACE, "[%x](%d): " fmt, std::this_thread::get_id(),  __LINE__, ##args)
 #endif
 
 #define log_debug(fmt, args...) \

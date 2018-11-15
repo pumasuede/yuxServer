@@ -1,5 +1,7 @@
 #include <strings.h>
 #include <iostream>
+#include <algorithm>
+
 #include "Socket.h"
 #include "Log.h"
 
@@ -57,23 +59,21 @@ int Socket::connect()
 int Socket::read()
 {
     // data
-    int readBytes = 0, pos = 0;
+    int readBytes = 0, offset = 0;
     bool closed = false;
 
     bzero(rdBuf_, sizeof(rdBuf_));
 
-    cout<<"Socket::read - About to read socket...\n";
     log_debug("About to read socket...");
-    int tmpSize = BUF_SIZE < 1024 ? BUF_SIZE : 1024;
+    int tmpSize = min(BUF_SIZE, 4096);
 
-    while (pos <= BUF_SIZE - tmpSize)
+    while (offset <= BUF_SIZE - tmpSize)
     {
-        readBytes = ::read(fd_, &rdBuf_[pos], tmpSize);
+        readBytes = ::read(fd_, &rdBuf_[offset], tmpSize);
         if (readBytes > 0)
         {
-            cout<<"read "<<readBytes<<" bytes\n";
             log_debug("read %d bytes", readBytes);
-            pos += readBytes;
+            offset += readBytes;
             continue;
         }
         else if (readBytes == 0)
@@ -83,7 +83,7 @@ int Socket::read()
             break;
         }
 
-        // readRet < 0 : Handle read error
+        // readBytes < 0 : Handle read error
 
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
@@ -105,18 +105,51 @@ int Socket::read()
     }
 
     // read completed , do callback
-    log_debug("Buf received:%d bytes", pos);
+    std::cout<<"Buf received: "<<std::to_string(offset)<<" bytes\n";
+    log_debug("Socket::read - received %d bytes", offset);
 
-    int ret = cbRead_(rdBuf_, pos, this);
+    int ret = cbRead_(rdBuf_, offset, this);
     if (closed)
         return 0;
 
     return ret == -1 ? -1 : 1;
 }
 
-int Socket::write()
+int Socket::write(uint8_t* buf, size_t size)
 {
-    return fd_;
+    int offset = 0;
+    int writeBytes = 0;
+
+    while (offset < size)
+    {
+        int tmpSize = min(int(size - offset), 4096);
+        writeBytes = ::write(fd_, &buf[offset], tmpSize);
+        if (writeBytes > 0)
+        {
+            log_debug("write %d bytes", writeBytes);
+            offset += writeBytes;
+            continue;
+        }
+        // writeBytes < 0 : Handle read error
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            // Wrting buffer is complete.
+            log_trace("errno == EAGAIN when writing socket buffer ");
+            continue;
+        }
+        else if (errno == EINTR)
+        {
+            log_trace("errno == EINTR when writing socket buffer");
+            continue;
+        }
+        else
+        {
+            cout<<"Error when writing socket buffer! errno="<<errno<<endl;
+            return -1;
+        }
+    }
+
+    log_debug("Socket::write - sent %d bytes to client", offset);
 }
 
 int ServerSocket::bind(const char* host, uint16_t port)

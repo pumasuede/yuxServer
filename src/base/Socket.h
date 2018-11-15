@@ -52,8 +52,8 @@ class SocketBase
         void setPeer(const char *host, uint16_t port) { peer_ = Peer(host, port); }
         void setNonBlocking();
 
-        virtual int read() {return 0;}
-        virtual int write() = 0;
+        virtual int read() { return 0; }
+        virtual int write(uint8_t* buf, size_t size) { return ::write(fd_, buf, size); }
         virtual int sendStr(const char* str) { return ::write(fd_, str, strlen(str)); }
         virtual int sendStr(const std::string& str) { return ::write(fd_, str.c_str(), str.size()); }
         virtual int send(uint8_t* buf, size_t size) { return ::write(fd_, buf, size); }
@@ -80,7 +80,7 @@ class Socket : public SocketBase
         int connect();
         int connect(const char *host, uint16_t port) { peer_ = Peer(host, port); return connect(); }
         int read();
-        int write();
+        int write(uint8_t* buf, size_t size);
     private:
         CallBack cbRead_;
         CallBack cbWrite_;
@@ -101,7 +101,6 @@ class ServerSocket : public SocketBase
         int bind(const char* host, uint16_t port);
         int listen() { return ::listen(fd_, 0); }
         SocketBase* accept();
-        int write() { return fd_; }
     private:
         Peer self_;
         SocketBase::CallBack cbRead_;

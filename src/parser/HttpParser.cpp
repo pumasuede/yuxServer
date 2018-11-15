@@ -63,7 +63,7 @@ bool HttpReqLineParser::parse(HttpRequest& req)
 
 bool HttpRequestParser::parse(HttpRequest& req, const char *buf, uint32_t size)
 {
-    std::cout<<"ready to parse http...\n";
+    log_debug("Ready to parse http request %d bytes...", size);
     int i=0, begin=0;
     bool isBody = false;
 
