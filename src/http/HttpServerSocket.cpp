@@ -128,6 +128,7 @@ void HttpServerThread::workBody()
 
             req_ = reqList.front();
             reqList.pop_front();
+            log_debug("Fetch one request from queue");
         }
 
         HttpRequest httpReq;
@@ -180,7 +181,7 @@ void HttpServerThread::workBody()
             {
                 // process static request
                 int fileSize = getFileSize(localFile);
-                log_debug("Process static %s file request. file size: %d\n", isBin ? "binary" : "text", fileSize);
+                log_debug("Process static %s file request. File size: %d", isBin ? "binary" : "text", fileSize);
 
                 sock->sendStr("Content-Type: " + contentType + "\r\n");
 

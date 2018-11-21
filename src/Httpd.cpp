@@ -111,7 +111,7 @@ void MainThread::workBody()
     const int httpWorkThreadNum = 5;
     for (int i = 0; i < httpWorkThreadNum; i++)
     {
-        HttpServerThread *pThread = new HttpServerThread("Http wotk thread"+std::to_string(i), httpServerSock);
+        HttpServerThread *pThread = new HttpServerThread("Http work thread"+std::to_string(i), httpServerSock);
         pThread->start();
         pThread->detach();
     }

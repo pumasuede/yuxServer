@@ -42,7 +42,7 @@ void HttpLineParser::parseOption(string& name, string& value)
         value = lineBuf_.substr(sep+2); //skip the space after :
     }
 
-    log_trace("Parsed header line: %s | %s", name.c_str(), value.c_str());
+    //log_trace("Parsed header line: %s | %s", name.c_str(), value.c_str());
 }
 
 bool HttpReqLineParser::parse(HttpRequest& req)

@@ -1,7 +1,21 @@
 #include "Log.h"
 
+using namespace std;
+
 namespace yux{
 namespace base{
+
+string getClassMethodName(string&& prettyFunction)
+{
+    auto end = prettyFunction.rfind("(");
+    auto funcName = prettyFunction.substr(0, end);
+    auto colons = funcName.rfind("::");
+
+    auto begin = (colons == string::npos) ? funcName.find(" ") + 1
+                                         : funcName.substr(0, colons - 1).rfind("::") + 2;
+
+    return funcName.substr(begin);
+}
 
 Logger& Logger::instance()
 {

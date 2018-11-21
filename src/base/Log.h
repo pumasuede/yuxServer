@@ -87,24 +87,28 @@ inline int log_level() { return Logger::instance().level(); }
 inline void set_log_level(int level) { Logger::instance().set_level(level); }
 
 int log_write(int level, const char *fmt, ...);
+std::string getClassMethodName(std::string&& prettyFunction);
+
+#define __FUNC_STR__ getClassMethodName(std::string(__PRETTY_FUNCTION__)).c_str()
+#define __THREAD_ID__ std::this_thread::get_id()
 
 #ifdef NDEBUG
 #define log_trace(fmt, args...) do{}while(0)
 #else
 #define log_trace(fmt, args...) \
-    log_write(yux::base::Logger::LEVEL_TRACE, "[%x](%d): " fmt, std::this_thread::get_id(),  __LINE__, ##args)
+    log_write(yux::base::Logger::LEVEL_TRACE, "[%x](%d)[%s]: " fmt, __THREAD_ID__,  __LINE__, __FUNC_STR__, ##args)
 #endif
 
 #define log_debug(fmt, args...) \
-    log_write(Logger::LEVEL_DEBUG, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+    log_write(Logger::LEVEL_DEBUG, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 #define log_info(fmt, args...) \
-    log_write(Logger::LEVEL_INFO, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+    log_write(Logger::LEVEL_INFO, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 #define log_warn(fmt, args...) \
-    log_write(Logger::LEVEL_WARN, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+    log_write(Logger::LEVEL_WARN, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 #define log_error(fmt, args...) \
-    log_write(Logger::LEVEL_ERROR, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+    log_write(Logger::LEVEL_ERROR, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 #define log_fatal(fmt, args...) \
-    log_write(Logger::LEVEL_FATAL, "[%x][%s] " fmt, std::this_thread::get_id(), __func__, ##args)
+    log_write(Logger::LEVEL_FATAL, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 
 }}
 #endif

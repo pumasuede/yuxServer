@@ -59,6 +59,7 @@ std::thread::id Thread::start()
         // Start work thread
         thr_ = new std::thread(&Thread::threadEntry, this);
         tid = thr_->get_id();
+        log_debug("Thread %d created - Tid: %x ..", id_, tid);
     }
     else
     {

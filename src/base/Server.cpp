@@ -161,7 +161,6 @@ void Server::loopOnce()
             }
             else
             {
-                cout<<"Read on client socket "<<fd<<" \n";
                 int ret = skt->read();
                 if (ret == 0)
                 {
