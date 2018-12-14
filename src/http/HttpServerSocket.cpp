@@ -156,7 +156,7 @@ void HttpServerThread::workBody()
         if (sock == nullptr || sock != req_.sock)
         {
             log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
-            return;
+            continue;
         }
 
 
