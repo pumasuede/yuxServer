@@ -16,6 +16,7 @@
 #include <functional>
 
 #include <string>
+#include <vector>
 
 using namespace std::placeholders;
 
@@ -27,7 +28,7 @@ class Peer
     public :
         Peer() : addr_(NULL) {}
         Peer(const char *host, uint16_t port) : host_(host), port_(port), addr_(NULL) {}
-        ~Peer() { if(addr_) freeaddrinfo(addr_); }
+        ~Peer() { if (addr_) freeaddrinfo(addr_); }
         addrinfo* addr();
         std::string  host_;
         uint16_t     port_;
@@ -37,19 +38,29 @@ class Peer
 class SocketBase
 {
     public:
+        enum SocketEvent
+        {
+            FIRST = 0,
+            READ = FIRST,
+            WRITE,
+            CLOSE,
+            LAST
+        };
+
         // For call back. return 0 if OK. return -1 if error.
         typedef std::function<int (const char*, size_t, SocketBase*)> CallBack;
-        virtual void setCbRead(CallBack cb) {}
-        virtual void setCbWrite(CallBack cb) { }
+        virtual void regCallBack(SocketEvent event, CallBack cb) { callBackList_[event].push_back(cb); }
+        virtual void regReadCallBack(CallBack cb) { regCallBack(SocketEvent::READ, cb); }
 
         SocketBase();
-        SocketBase(int fd, const Peer& peer): fd_(fd), peer_(peer) {}
+        SocketBase(int fd, const Peer& remote): fd_(fd), remote_(remote) {}
         virtual ~SocketBase() { close(); }
 
         virtual void init() {}
         int fd() { return fd_; }
-        const Peer& getPeer() { return peer_; }
-        void setPeer(const char *host, uint16_t port) { peer_ = Peer(host, port); }
+        const Peer& getLocal() { return local_; }
+        const Peer& getRemote() { return remote_; }
+        void setRemote(const char *host, uint16_t port) { remote_ = Peer(host, port); }
         void setNonBlocking();
 
         virtual int read() { return 0; }
@@ -64,47 +75,35 @@ class SocketBase
         #define BUF_SIZE 4096
         int fd_;
         char rdBuf_[BUF_SIZE];
-        Peer peer_;
+        Peer remote_;
+        Peer local_;
+        std::vector<CallBack> callBackList_[SocketEvent::LAST];
 };
 
 // Client socket
 class Socket : public SocketBase
 {
     public:
-        void setCbRead(SocketBase::CallBack cb) { cbRead_ = cb; }
-        void setCbWrite(SocketBase::CallBack cb) { cbWrite_ = cb; }
-
         Socket() {}
-        Socket(int fd, const Peer& peer) : SocketBase(fd, peer) {}
-        Socket(const char *host, uint16_t port) { peer_ = Peer(host, port); }
+        Socket(int fd, const Peer& remote) : SocketBase(fd, remote) {}
+        Socket(const char *host, uint16_t port) { remote_ = Peer(host, port); }
         int connect();
-        int connect(const char *host, uint16_t port) { peer_ = Peer(host, port); return connect(); }
+        int connect(const char *host, uint16_t port) { remote_ = Peer(host, port); return connect(); }
         int read();
         int write(uint8_t* buf, size_t size);
-    private:
-        CallBack cbRead_;
-        CallBack cbWrite_;
 };
 
 // Sever socket
 class ServerSocket : public SocketBase
 {
     public:
-        static ServerSocket* create(const std::string& host, uint16_t port);
-        int readCallBack(const char* buf, size_t size, SocketBase *sock);
-        void setCbRead(SocketBase::CallBack cb) { cbRead_ = cb; }
-        void setCbWrite(SocketBase::CallBack cb) { cbWrite_ = cb; }
 
         ServerSocket() {}
         ServerSocket(const char* host, uint16_t port) { bind(host, port); listen(); }
-        ServerSocket(const char* host, uint16_t port, SocketBase::CallBack cbRead) : cbRead_(cbRead) { bind(host, port); listen(); }
+        ServerSocket(const char* host, uint16_t port, SocketBase::CallBack cbRead) { bind(host, port); listen(); regCallBack(SocketEvent::READ, cbRead); }
         int bind(const char* host, uint16_t port);
         int listen() { return ::listen(fd_, 0); }
         SocketBase* accept();
-    private:
-        Peer self_;
-        SocketBase::CallBack cbRead_;
-        SocketBase::CallBack cbWrite_;
 };
 
 }} //namespace

@@ -42,14 +42,8 @@ void Server::init()
     for ( int n = 0; n < fdMax; ++n )
         fdToSkt_[n] = NULL;
 
-    // create events;
-    #ifdef __linux__
-        fdes_ = new EpollFdes();
-    #else
-        fdes_ = new SelectFdes();
-    #endif
-
-    fdes_->create();
+    // create FDES;
+    fdes_ = FDES::getInstance();
 }
 
 void Server::addTimer(Timer* timer)
@@ -65,24 +59,48 @@ void Server::addTimer(int intval, Timer::TimerCallBack timerCb)
     timers_.push_back(timer);
 }
 
+
+Timer* Server::getMinTimer(int current)
+{
+    int min = INT_MAX;
+    Timer* pTimer = nullptr;
+
+    for (auto timer : timers_)
+    {
+        if (timer->lastFired_ == -1)
+        {
+            timer->lastFired_ = current;
+        }
+
+        int toFire = timer->lastFired_ + timer->mSec_;
+
+        if (toFire < min)
+        {
+            min = toFire;
+            pTimer = timer;
+        }
+    }
+
+    return pTimer;
+}
+
 void Server::addServerSocket(SocketBase* pServerSocket)
 {
     int servFd = pServerSocket->fd();
-    const Peer& peer = pServerSocket->getPeer();
-    log_debug("listen on IP: %s and Port: %d Fd: %d", peer.host_.c_str(), peer.port_, servFd);
-    cout<<"listen on IP:"<<peer.host_<<" and Port:"<<peer.port_<<" Fd:"<<servFd<<"...\n";
+    const Peer& local = pServerSocket->getLocal();
+    log_debug("listen on IP: %s and Port: %d Fd: %d", local.host_.c_str(), local.port_, servFd);
+    cout<<"listen on IP:"<<local.host_<<" and Port:"<<local.port_<<" Fd:"<<servFd<<"...\n";
 
-    fdToSkt_[servFd] = pServerSocket;
+    regSocket(pServerSocket);
     fdes_->addWatch(servFd, Fde::READ);
     servSockList_.insert(pServerSocket);
 }
 
 Server::~Server()
 {
-    std::set<SocketBase*>::iterator it = servSockList_.begin();
-    for (; it!=servSockList_.end(); ++it)
+    for (auto sock : servSockList_)
     {
-        delete *it;
+        delete sock;
     }
 
     for (int i=0; i<fdToSkt_.size(); i++)
@@ -99,22 +117,14 @@ void Server::loopOnce()
     struct timeval tv;
     gettimeofday(&tv, NULL);
     int current = tv.tv_sec*1000 + tv.tv_usec/1000;
-    int min = INT_MAX;
-    for (auto it : timers_)
-    {
-        if (it->lastFired_ == -1)
-        {
-            it->lastFired_ = current;
-        }
+    Timer* pTimer = getMinTimer(current);
 
-        int nextFire = it->lastFired_ + it->mSec_;
-        if (nextFire > current && nextFire < min)
-        {
-            min = nextFire;
-        }
-    }
+    int toFire = pTimer->lastFired_ + pTimer->mSec_;
+    int gap = toFire - current;
+    log_debug("nextFire/current time point: %d-%d gap=%dms", toFire, current, gap );
+    int timeToFire = gap > 0 ? gap : 0;
 
-    int n = fdes_->wait(min - current);
+    int n = fdes_->wait(timeToFire);
 
     // Error!
     if (n<0)
@@ -126,12 +136,12 @@ void Server::loopOnce()
         gettimeofday(&tv, NULL);
         int current = tv.tv_sec*1000 + tv.tv_usec/1000;
 
-        for (auto it : timers_)
+        for (auto timer : timers_)
         {
-            if (it->lastFired_+it->mSec_ < current+10)
+            if (timer->lastFired_ + timer ->mSec_ < current+10)
             {
-                it->timerCb_(this);
-                it->lastFired_ = current;
+                timer->timerCb_(this);
+                timer->lastFired_ = current;
             }
         }
     }
@@ -142,9 +152,8 @@ void Server::loopOnce()
         cout<<"Warn: wait result doesn't match ready Fd events "<<n<<" : "<<readyFdes.size()<<" \n";
     }
 
-    for (int i=0; i<readyFdes.size(); i++)
+    for (auto fde : readyFdes)
     {
-        Fde *fde = readyFdes[i];
         int fd = fde->fd();
         SocketBase *skt = fdToSkt_[fd];
         if (!skt)
@@ -155,9 +164,8 @@ void Server::loopOnce()
             {
                 SocketBase *newSkt = dynamic_cast<ServerSocket*>(skt)->accept();
                 int newFd = newSkt->fd();
-                fdToSkt_[newFd] = newSkt;
+                regSocket(newSkt);
                 fdes_->addWatch(newFd, Fde::READ);
-                cout<<"Accept new socket - Fd:"<<newFd<<"...\n";
             }
             else
             {
@@ -187,7 +195,7 @@ void Server::closeSocket(int fd)
     fdes_->delWatch(fd, Fde::READ);
     fdes_->delWatch(fd, Fde::WRITE);
 
-    cout<<"Deleting socket - Fd: "<<fd <<"\n";
+    cout<<"Closing socket - Fd: "<<fd <<"\n";
     std::lock_guard<std::mutex> lock(mutex_);
     SocketBase *sock = fdToSkt_[fd];
     if (sock == nullptr)
@@ -205,4 +213,4 @@ void Server::loop()
     }
 }
 
-}}
+}} // name space

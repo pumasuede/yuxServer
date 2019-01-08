@@ -2,7 +2,6 @@
 #define __YUX_SINGLETON_H_
 
 #include <iostream>
-#include <pthread.h>
 
 namespace yux {
 namespace base {

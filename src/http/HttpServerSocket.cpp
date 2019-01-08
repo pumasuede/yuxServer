@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <iostream>
 #include <fstream>
+#include <array>
 
 #include "HttpServerSocket.h"
 #include "HttpConfig.h"
@@ -25,7 +26,7 @@ std::mutex HttpServerThread::socketMutex_;
 HttpServerSocket* HttpServerSocket::create(const string& host, uint16_t port)
 {
     HttpServerSocket* pSock = new HttpServerSocket(host, port);
-    pSock->setCbRead(std::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
+    pSock->regReadCallBack(std::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
 
     string docRoot = Config::getInstance()->get("document_root", ".");
     string mimeFile = Config::getInstance()->get("mime_file", "mime_types");
@@ -75,6 +76,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     }
 
     recvData.clear();
+    return 0;
 }
 
 void HttpServerThread::handleScript(HttpRequest& httpReq)
@@ -171,7 +173,7 @@ void HttpServerThread::workBody()
         if (file.is_open())
         {
             sock->sendStr("HTTP/1.1 200 OK\r\n");
-            sock->sendStr("Server: yuhttpd\r\n");
+            sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
             // process php script
             if (fileExt == "php" || fileExt == "cgi")
             {
@@ -206,10 +208,11 @@ void HttpServerThread::workBody()
         }
         else
         {
-            // Todo return 404
-            sock->sendStr("HTTP/1.1 404 OK\r\n");
-            sock->sendStr("Server: yuhttpd\r\n");
-            sock->sendStr("Can't find Request URL "+ uri +" !<br>\n");
+            sock->sendStr("HTTP/1.1 404 Not Found\r\n");
+            sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
+            sock->sendStr("Content-Type: text/html\r\n");
+            sock->sendStr("Connection: close\r\n\r\n");
+            sock->sendStr("Can't find "+ uri +"!<br>\n");
         }
 
         {

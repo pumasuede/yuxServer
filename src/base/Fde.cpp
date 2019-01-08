@@ -33,15 +33,15 @@ Fdes::~Fdes()
 
 // Select
 
-void SelectFdes::create()
+void SelectFdes::init()
 {
-    if (!created_)
+    if (!init_)
     {
         FD_ZERO(&rfds_);
         FD_ZERO(&wfds_);
         FD_ZERO(&efds_);
         maxFd_ = 0;
-        created_ = true;
+        init_ = true;
     }
 }
 
@@ -134,20 +134,16 @@ int SelectFdes::wait(int mSecTimout)
     return n;
 }
 
-//Epoll
+// Epoll
 #ifdef __linux__
 
-EpollFdes::EpollFdes():ee_size_(100), epollFd_(0)
+void EpollFdes::init()
 {
-    events_ = new struct epoll_event[ee_size_];
-}
-
-void EpollFdes::create()
-{
-    if (!created_)
+    if (!init_)
     {
+        events_ = new struct epoll_event[ee_size_];
         epollFd_ = epoll_create(10);
-        created_ = true;
+        init_ = true;
     }
 }
 

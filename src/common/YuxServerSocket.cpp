@@ -18,7 +18,7 @@ namespace common{
 YuxServerSocket* YuxServerSocket::create(const char* host, uint16_t port)
 {
     YuxServerSocket* pSock = new YuxServerSocket(host, port);
-    pSock->setCbRead(std::bind(&YuxServerSocket::readCallBack, pSock, _1, _2, _3));
+    pSock->regReadCallBack(std::bind(&YuxServerSocket::readCallBack, pSock, _1, _2, _3));
     return pSock;
 }
 

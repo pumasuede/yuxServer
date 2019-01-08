@@ -64,27 +64,29 @@ int parse_arg(int argc, char* argv[])
     return c;
 }
 
-int readCallBack(const char* buf, size_t size, SocketBase *sock)
+int httpClient_readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
-    string data(buf, size);
     log_debug("readCallBack %d bytes", size);
-    log_trace("readCallBack Data:\n%s", data.c_str());
+
+    int fd = open("baidu.html", O_RDWR|O_APPEND);
+    write(fd, buf, size);
+    close(fd);
     return 0;
 }
 
 int Timer1Callback(void*)
 {
-    const char *hostname = "163.com";
+    const char *hostname = "www.baidu.com";
     log_debug("*** Timer1Callback called. Try to request %s", hostname);
 
-    HttpClientSocket httpClient;
-    httpClient.setTimeout(1000);
-    httpClient.request("163.com", std::bind(&readCallBack, _1, _2, _3));
+    HttpClientSocket *httpClient = new HttpClientSocket;
+    Server::getInstance().regSocket(httpClient);
+    httpClient->request(hostname, std::bind(&httpClient_readCallBack, _1, _2, _3));
+    return 0;
 }
 
 int Timer2Callback(void*)
 {
-    cout<<"*** Timer2Callback called \n ";
     log_debug("*** Timer2Callback called ");
 }
 
@@ -100,10 +102,10 @@ void MainThread::workBody()
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    Timer *timer1 = new Timer(300000, &Timer1Callback);
+    Timer *timer1 = new Timer(180*1000, &Timer1Callback);
     mainServer.addTimer(timer1);
-    // Timer *timer2 = new Timer(3000, &Timer2Callback);
-    // mainServer.addTimer(timer2);
+    //Timer *timer2 = new Timer(10*1000, &Timer2Callback);
+    //mainServer.addTimer(timer2);
 
     HttpServerSocket* httpServerSock = HttpServerSocket::create(serverIP, serverPort);
     mainServer.addServerSocket(httpServerSock);

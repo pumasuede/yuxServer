@@ -4,8 +4,11 @@
 #ifdef __linux__
 #include <sys/epoll.h>
 #endif
+
 #include <sys/select.h>
 #include <vector>
+
+#include "Singleton.h"
 
 namespace yux {
 namespace base {
@@ -48,10 +51,10 @@ class Fdes
 {
     public:
         Fde* getFde(int fd);
-        Fdes() : created_(false) {}
+        Fdes() : init_(false) {}
         virtual ~Fdes();
         // init fdes.
-        virtual void create() = 0;
+        virtual void init() = 0;
         // return the count of events to be handled.
         virtual int wait(int mSecTimout =-1) = 0;
         // add fd to watch
@@ -65,7 +68,7 @@ class Fdes
     protected:
         std::vector<Fde*> readyList_;
         std::vector<Fde*> fdeList_;
-        bool created_;
+        bool init_;
 };
 
 // Select
@@ -73,7 +76,8 @@ class Fdes
 class SelectFdes : public Fdes
 {
     public:
-        void create();
+        SelectFdes() { init();  }
+        void init();
         int wait(int mSecTimout);
         void addWatch(int fd, Fde::FdEvent event);
         void delWatch(int fd, Fde::FdEvent event);
@@ -85,13 +89,15 @@ class SelectFdes : public Fdes
         int    maxFd_;
 };
 
+
 // Epoll
+
 #ifdef __linux__
 class EpollFdes : public Fdes
 {
     public:
-        EpollFdes();
-        void create();
+        EpollFdes(): ee_size_(100), epollFd_(0) { init(); }
+        void init();
         int wait(int mSecTimout);
         void addWatch(int fd, Fde::FdEvent event);
         void delWatch(int fd, Fde::FdEvent event);
@@ -102,6 +108,9 @@ class EpollFdes : public Fdes
         // epoll events
         struct epoll_event *events_;
 };
+    #define FDES Singleton<EpollFdes>
+#else
+    #define FDES Singleton<SelectFdes>
 #endif
 
 }} //namespace

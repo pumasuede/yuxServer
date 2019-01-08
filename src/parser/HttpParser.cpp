@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <iostream>
+#include <sstream>
 #include <regex>
 
 #include "HttpParser.h"

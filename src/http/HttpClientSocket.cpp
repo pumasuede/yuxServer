@@ -1,5 +1,7 @@
 #include <iostream>
+
 #include "HttpClientSocket.h"
+#include "base/Fde.h"
 #include "base/Utils.h"
 #include "base/Log.h"
 
@@ -27,74 +29,32 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
 {
     URLParser urlParser(url);
     urlParser.parse();
-    peer_ = Peer(urlParser.host_.c_str(), urlParser.port_);
-    setCbRead(cb);
+    remote_ = Peer(urlParser.host_.c_str(), urlParser.port_);
 
     Fdes* fdes = FDES::getInstance();
     fdes->addWatch(fd_, Fde::READ);
+    regReadCallBack(cb);
 
     int con = connect();
     if (con == -1)
     {
-        cout<<"connect error:"<<errno<<endl;
+        log_debug("connect error: %s", strerror(errno));
         return -1;
     }
 
-    string httpReq = string("GET /") + urlParser.path_ + " HTTP/1.1\n";
+    string path = urlParser.path_.empty() ? "/" : urlParser.path_;
+    string httpReq = string("GET ") + path + " HTTP/1.1\r\n";
+
     char hostLine[100] = {};
-    sprintf(hostLine, "Host: %s:%d\n", urlParser.host_.c_str(), urlParser.port_);
+    sprintf(hostLine, "Host: %s:%d\r\n", urlParser.host_.c_str(), urlParser.port_);
+
     httpReq += hostLine;
-    httpReq += "User-Agent: YuxHttpClient \n";
-    httpReq += "Connection: close \n";
-    httpReq += "\r\n\r\n";
+    httpReq += "User-Agent: YuxHttpClient\r\n";
+    httpReq += "Connection: close\r\n";
+    httpReq += "\r\n";
 
+    log_debug("Sending request on fd:%d %s", fd_, hostLine);
     sendStr(httpReq);
-
-    while (1)
-    {
-        int n = fdes->wait(m_timeOut);
-
-        if (n<0)
-            return -1;
-
-        if (n==0)
-        {
-            //timeout
-            log_debug("http client request timeout");
-            return -1;
-        }
-
-        vector<Fde*>& readyFdes = fdes->readyList();
-        if (n != readyFdes.size())
-        {
-            cout<<"Warn: wait result doesn't match ready Fd events "<<n<<" : "<<readyFdes.size()<<" \n";
-        }
-
-        for (int i=0; i<readyFdes.size(); i++)
-        {
-            Fde *fde = readyFdes[i];
-            int fd = fde->fd();
-
-            if (fd != fd_ || !fde->readable())
-                continue;
-
-            int ret = read();
-
-            if (ret == 0)
-            {
-                log_debug("Socket is closed by peer, closing socket - Fd: %d", fd);
-                close();
-                return -1;
-            }
-
-            if (ret < 0)
-            {
-                close();
-                cout<<"Socket read error, will delete socket - Fd: "<<fd <<"\n";
-                return -1;
-            }
-        }
-    }
 }
 
 }} //name space

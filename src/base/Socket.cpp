@@ -53,7 +53,7 @@ void SocketBase::setNonBlocking()
 
 int Socket::connect()
 {
-    return ::connect(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
+    return ::connect(fd_, remote_.addr()->ai_addr, remote_.addr()->ai_addrlen);
 }
 
 int Socket::read()
@@ -104,15 +104,28 @@ int Socket::read()
         }
     }
 
-    // read completed , do callback
-    std::cout<<"Buf received: "<<std::to_string(offset)<<" bytes\n";
+    // read completed
+    // std::cout<<"Buf received: "<<std::to_string(offset)<<" bytes\n";
     log_debug("Socket::read - received %d bytes", offset);
 
-    int ret = cbRead_(rdBuf_, offset, this);
     if (closed)
         return 0;
 
-    return ret == -1 ? -1 : 1;
+    int ret = 1;
+
+    // do callback for READ event
+    for ( auto callback : callBackList_[SocketEvent::READ])
+    {
+        int result = callback(rdBuf_, offset, this);
+        if (result == -1)
+        {
+            ret = -1;
+            log_debug("Socket::read - callback error!");
+            break;
+        }
+    }
+
+    return ret;
 }
 
 int Socket::write(uint8_t* buf, size_t size)
@@ -144,18 +157,19 @@ int Socket::write(uint8_t* buf, size_t size)
         }
         else
         {
-            cout<<"Error when writing socket buffer! errno="<<errno<<endl;
+            log_error("Error when writing socket buffer! errno=%d", errno);
             return -1;
         }
     }
 
     log_debug("Socket::write - sent %d bytes to client", offset);
+    return 0;
 }
 
 int ServerSocket::bind(const char* host, uint16_t port)
 {
-   peer_ = Peer(host, port);
-   int rc = ::bind(fd_, peer_.addr()->ai_addr, peer_.addr()->ai_addrlen);
+   local_ = Peer(host, port);
+   int rc = ::bind(fd_, local_.addr()->ai_addr, local_.addr()->ai_addrlen);
 
    if (rc == -1)
    {
@@ -166,34 +180,26 @@ int ServerSocket::bind(const char* host, uint16_t port)
    return rc;
 }
 
-int ServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
-{
-    string recvBuf(buf, size);
-    cout<<"read "<<size<<" bytes:"<<buf<<endl;
-    log_info("read %d bytes - [%s]", size, buf);
-    return 1;
-}
-
 SocketBase* ServerSocket::accept()
 {
     sockaddr_in  clientAddr;
     socklen_t    addrLen = sizeof(clientAddr);
     int newFd = ::accept(fd_, (sockaddr*) &clientAddr, &addrLen);
-    cout<<"new client from ["<<inet_ntoa(clientAddr.sin_addr)<<":"<<ntohs(clientAddr.sin_port)<<"]...\n";
-    Peer peer(inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
+    cout<<"new client from ["<<inet_ntoa(clientAddr.sin_addr)<<":"<<ntohs(clientAddr.sin_port)<<"] on Fd:"<<newFd<<"...\n";
+    Peer remote(inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 
-    SocketBase *sock = new Socket(newFd, peer);
+    SocketBase *sock = new Socket(newFd, remote);
     sock->setNonBlocking();
-    sock->setCbRead(cbRead_);
+
+    for (int i = SocketEvent::FIRST; i< SocketEvent::LAST; i++)
+    {
+        for (auto& callback : callBackList_[i])
+        {
+            sock->regCallBack(static_cast<SocketEvent>(i), callback);
+        }
+    }
 
     return sock;
-}
-
-ServerSocket* ServerSocket::create(const std::string& host, uint16_t port)
-{
-    ServerSocket* pSock = new ServerSocket(host.c_str(), port);
-    pSock->setCbRead(std::bind(&ServerSocket::readCallBack, pSock, _1, _2, _3));
-    return pSock;
 }
 
 }}
