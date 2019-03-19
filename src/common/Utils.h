@@ -7,24 +7,14 @@
 #include <string>
 #include <functional>
 
-namespace yux{
-namespace base{
+namespace yux {
+namespace common {
 
 std::string getFormatTime();
 std::string trim(const std::string& str);
 void writeNum(unsigned char* dest, unsigned int number, int bytes);
 int getFileSize(const std::string& filename);
 bool isBinary(const std::string& fileExt);
-
-struct Timer
-{
-    typedef std::function<int (void*)> TimerCallBack;
-    Timer(int mSec, TimerCallBack timerCb): mSec_(mSec), timerCb_(timerCb), lastFired_(-1) { }
-
-    int mSec_;
-    int lastFired_;
-    TimerCallBack timerCb_;
-};
 
 // Check if a char is a control char.
 inline bool isControl(char c)

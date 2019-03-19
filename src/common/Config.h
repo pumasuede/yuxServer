@@ -2,15 +2,15 @@
 #define __YUX_CONFIG_H__
 
 #include <unordered_map>
-#include "Singleton.h"
+#include "base/Singleton.h"
 
 namespace yux {
-namespace base {
+namespace common {
 
 // Config define
-class Config : public Singleton<Config>
+class Config : public yux::base::Singleton<Config>
 {
-    friend class Singleton<Config>;
+    friend class yux::base::Singleton<Config>;
     public:
         void loadConfigFile(const std::string& file) { file_ = file; load(); }
         bool exist(const std::string& key) { return config_.find(key) != config_.end(); }

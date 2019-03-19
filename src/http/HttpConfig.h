@@ -24,4 +24,5 @@ class MimeConfig : public yux::base::Singleton<MimeConfig>
 };
 
 }} // namespace
+
 #endif

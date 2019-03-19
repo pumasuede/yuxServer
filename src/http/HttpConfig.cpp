@@ -4,10 +4,11 @@
 
 #include "HttpConfig.h"
 #include "base/Log.h"
-#include "base/Utils.h"
+#include "common/Utils.h"
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::common;
 
 namespace yux {
 namespace http {

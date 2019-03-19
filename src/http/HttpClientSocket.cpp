@@ -2,11 +2,12 @@
 
 #include "HttpClientSocket.h"
 #include "base/Fde.h"
-#include "base/Utils.h"
 #include "base/Log.h"
+#include "common/Utils.h"
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::common;
 
 namespace yux{
 namespace http{

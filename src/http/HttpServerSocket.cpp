@@ -8,12 +8,14 @@
 
 #include "HttpServerSocket.h"
 #include "HttpConfig.h"
+
 #include "base/Log.h"
-#include "base/Config.h"
-#include "base/Server.h"
+#include "common/Config.h"
+#include "common/Server.h"
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::common;
 using namespace yux::parser;
 
 namespace yux{

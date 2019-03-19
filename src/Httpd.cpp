@@ -9,13 +9,16 @@
 #include <stdlib.h>
 
 #include "base/Log.h"
-#include "base/Config.h"
-#include "base/Server.h"
+#include "base/Timer.h"
+#include "common/Config.h"
+#include "common/Server.h"
+
 #include "http/HttpClientSocket.h"
 #include "http/HttpServerSocket.h"
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::common;
 using namespace yux::http;
 
 #define DEFAULT_PORT  8080
@@ -64,32 +67,6 @@ int parse_arg(int argc, char* argv[])
     return c;
 }
 
-int httpClient_readCallBack(const char* buf, size_t size, SocketBase *sock)
-{
-    log_debug("readCallBack %d bytes", size);
-
-    int fd = open("baidu.html", O_RDWR|O_APPEND);
-    write(fd, buf, size);
-    close(fd);
-    return 0;
-}
-
-int Timer1Callback(void*)
-{
-    const char *hostname = "www.baidu.com";
-    log_debug("*** Timer1Callback called. Try to request %s", hostname);
-
-    HttpClientSocket *httpClient = new HttpClientSocket;
-    Server::getInstance().regSocket(httpClient);
-    httpClient->request(hostname, std::bind(&httpClient_readCallBack, _1, _2, _3));
-    return 0;
-}
-
-int Timer2Callback(void*)
-{
-    log_debug("*** Timer2Callback called ");
-}
-
 class MainThread : public Thread
 {
     public:
@@ -102,10 +79,10 @@ void MainThread::workBody()
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    Timer *timer1 = new Timer(180*1000, &Timer1Callback);
-    mainServer.addTimer(timer1);
-    //Timer *timer2 = new Timer(10*1000, &Timer2Callback);
-    //mainServer.addTimer(timer2);
+    for (auto& timer : getTimers())
+    {
+        mainServer.addTimer(&timer);
+    }
 
     HttpServerSocket* httpServerSock = HttpServerSocket::create(serverIP, serverPort);
     mainServer.addServerSocket(httpServerSock);

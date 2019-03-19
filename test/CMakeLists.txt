@@ -14,22 +14,31 @@ MESSAGE("BASE DIR : $ENV{BASE_DIR}")
 MESSAGE("GPB DIR : $ENV{GPB_DIR}")
 MESSAGE("CXX_FLAGS : ${CMAKE_CXX_FLAGS}")
 
-INCLUDE_DIRECTORIES(../src $ENV{GPB_DIR}/include)
-LINK_DIRECTORIES(/usr/local/lib $ENV{BASE_DIR}/install/bin $ENV{GPB_DIR}/lib)
+INCLUDE_DIRECTORIES(../src)
+LINK_DIRECTORIES(/usr/local/lib $ENV{BASE_DIR}/install/bin)
+
+IF (DEFINED ENV{GPB_DIR})
+    INCLUDE_DIRECTORIES($ENV{GPB_DIR}/include)
+    LINK_DIRECTORIES($ENV{GPB_DIR}/lib)
+ENDIF()
 
 AUX_SOURCE_DIRECTORY(. DIR_SRCS)
 
+SET(CMAKE_INSTALL_PREFIX ../../install)
+
+IF (DEFINED ENV{GPB_DIR})
+    ADD_EXECUTABLE(TestClient TestClient.cpp)
+    TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
+    INSTALL(TARGETS TestClient DESTINATION bin)
+ENDIF()
+
 ADD_EXECUTABLE(TestThread main.cpp)
 TARGET_LINK_LIBRARIES(TestThread Base pthread)
-
-ADD_EXECUTABLE(TestClient TestClient.cpp)
-TARGET_LINK_LIBRARIES(TestClient Pbout Base StateMachine protobuf)
 
 ADD_EXECUTABLE(HttpClient TestHttpClient.cpp)
 TARGET_LINK_LIBRARIES(HttpClient Base Http)
 
 ADD_EXECUTABLE(TestServer TestServer.cpp)
-TARGET_LINK_LIBRARIES(TestServer Base pthread)
+TARGET_LINK_LIBRARIES(TestServer Base Common pthread)
 
-SET(CMAKE_INSTALL_PREFIX ../../install)
-INSTALL(TARGETS HttpClient TestClient TestServer TestThread DESTINATION bin)
+INSTALL(TARGETS HttpClient TestServer TestThread DESTINATION bin)

@@ -9,9 +9,8 @@
 #include <stdlib.h>
 
 #include "base/Log.h"
-#include "base/Server.h"
-#include "common/YuxServerSocket.h"
-#include "http/HttpServerSocket.h"
+#include "common/Server.h"
+#include "statemachine/YuxServerSocket.h"
 
 using namespace std;
 using namespace yux::base;
@@ -70,7 +69,7 @@ int main(int argc, char* argv[])
     Server& mainServer = Server::getInstance();
     mainServer.init();
 
-    SocketBase* yuxServerSock = YuxServerSocket::create(server_ip.c_str(), 8888);
+    SocketBase* yuxServerSock = YuxServerSocket::create(server_ip.c_str(), server_port);
 
     mainServer.addServerSocket(yuxServerSock);
 

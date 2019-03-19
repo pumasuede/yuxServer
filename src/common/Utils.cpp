@@ -5,8 +5,8 @@
 
 #include <stdio.h>
 
-namespace yux{
-namespace base{
+namespace yux {
+namespace common {
 
 using namespace std;
 

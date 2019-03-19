@@ -1,10 +1,11 @@
 #include <iostream>
 #include <functional>
 
-#include "base/Server.h"
+#include "common/Server.h"
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::common;
 
 int readCallBack(const char* buf, size_t size, SocketBase *sock)
 {

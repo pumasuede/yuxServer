@@ -1,7 +1,7 @@
 #include "fast_cgi.h"
 #include "fcgi.h"
 #include "base/Log.h"
-#include "base/Utils.h"
+#include "common/Utils.h"
 
 #include <string>
 #include <unistd.h>
@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace yux::base;
+using namespace yux::common;
 
 namespace yux{
 namespace http{

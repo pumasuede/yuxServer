@@ -64,7 +64,7 @@ int Socket::read()
 
     bzero(rdBuf_, sizeof(rdBuf_));
 
-    log_debug("About to read socket...");
+    log_trace("About to read socket...");
     int tmpSize = min(BUF_SIZE, 4096);
 
     while (offset <= BUF_SIZE - tmpSize)
@@ -72,7 +72,7 @@ int Socket::read()
         readBytes = ::read(fd_, &rdBuf_[offset], tmpSize);
         if (readBytes > 0)
         {
-            log_debug("read %d bytes", readBytes);
+            log_trace("read %d bytes", readBytes);
             offset += readBytes;
             continue;
         }

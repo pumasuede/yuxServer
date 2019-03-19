@@ -5,13 +5,14 @@
 #include <iostream>
 
 #include "Server.h"
-#include "Log.h"
-#include "Fde.h"
+#include "base/Log.h"
+#include "base/Fde.h"
 
 using namespace std;
+using namespace yux::base;
 
 namespace yux{
-namespace base{
+namespace common{
 
 Server& Server::getInstance()
 {
@@ -119,10 +120,15 @@ void Server::loopOnce()
     int current = tv.tv_sec*1000 + tv.tv_usec/1000;
     Timer* pTimer = getMinTimer(current);
 
-    int toFire = pTimer->lastFired_ + pTimer->mSec_;
-    int gap = toFire - current;
-    log_debug("nextFire/current time point: %d-%d gap=%dms", toFire, current, gap );
-    int timeToFire = gap > 0 ? gap : 0;
+    int timeToFire = 0;
+
+    if (pTimer)
+    {
+        int toFire = pTimer->lastFired_ + pTimer->mSec_;
+        int gap = toFire - current;
+        log_trace("nextFire/current time point: %d-%d gap=%dms", toFire, current, gap );
+        int timeToFire = gap > 0 ? gap : 0;
+    }
 
     int n = fdes_->wait(timeToFire);
 
@@ -195,7 +201,7 @@ void Server::closeSocket(int fd)
     fdes_->delWatch(fd, Fde::READ);
     fdes_->delWatch(fd, Fde::WRITE);
 
-    cout<<"Closing socket - Fd: "<<fd <<"\n";
+    log_trace("Closing socket - Fd:%d ", fd);
     std::lock_guard<std::mutex> lock(mutex_);
     SocketBase *sock = fdToSkt_[fd];
     if (sock == nullptr)

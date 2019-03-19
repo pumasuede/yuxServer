@@ -3,7 +3,6 @@
 #include <map>
 #include <memory>
 
-#include "common/State.h"
 #include "common/Event.h"
 #include "base/Socket.h"
 

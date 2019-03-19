@@ -5,7 +5,7 @@
 using namespace std;
 
 namespace yux {
-namespace base {
+namespace common {
 
 void Config::load()
 {

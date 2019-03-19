@@ -8,18 +8,22 @@
 #include <set>
 #include <mutex>
 
+#include "base/Timer.h"
+#include "base/Socket.h"
+#include "base/Fde.h"
 #include "Utils.h"
-#include "Socket.h"
 
 #define HTTP_SERVER_VERSION "1.0.0"
 
-namespace yux{
-namespace base{
-class Fdes;
+namespace yux {
+namespace common {
 
 class Server
 {
     public:
+        typedef yux::base::SocketBase SocketBase;
+        typedef yux::base::Timer Timer;
+
         static Server& getInstance();
         ~Server();
         void init(std::string host, uint16_t port, SocketBase::CallBack cbRead, Timer* timer = NULL);
@@ -37,11 +41,11 @@ class Server
 
     private:
         Server() {};
-        Timer* getMinTimer(int current);
+        yux::base::Timer* getMinTimer(int current);
         std::set<SocketBase*> servSockList_;
         std::vector<SocketBase*> fdToSkt_;
         std::list<Timer*> timers_;
-        Fdes* fdes_;
+        yux::base::Fdes* fdes_;
         bool stop_;
         std::mutex mutex_;
 };
