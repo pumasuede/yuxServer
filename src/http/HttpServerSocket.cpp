@@ -21,9 +21,8 @@ using namespace yux::parser;
 namespace yux{
 namespace http{
 
-std::mutex HttpServerThread::mutex_;
-std::condition_variable HttpServerThread::cv_;
-std::mutex HttpServerThread::socketMutex_;
+std::mutex HttpWorkerThread::mutex_;
+std::condition_variable HttpWorkerThread::cv_;
 
 HttpServerSocket* HttpServerSocket::create(const string& host, uint16_t port)
 {
@@ -71,17 +70,17 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
 
     if (recvData.size() > 0)
     {
-        lock_guard<std::mutex> lock(HttpServerThread::mutex_);
+        lock_guard<std::mutex> lock(HttpWorkerThread::mutex_);
         req.seq = seq++;
         reqList_.push_back(req);
-        HttpServerThread::cv_.notify_all();
+        HttpWorkerThread::cv_.notify_all();
     }
 
     recvData.clear();
     return 0;
 }
 
-void HttpServerThread::handleScript(HttpRequest& httpReq)
+void HttpWorkerThread::handleScript(HttpRequest& httpReq)
 {
     const string& scriptName = httpReq.startLine.scriptName;
     const string& queryString = httpReq.startLine.queryString;
@@ -120,7 +119,7 @@ void HttpServerThread::handleScript(HttpRequest& httpReq)
     fastCgi_.endRequest();
 }
 
-void HttpServerThread::workBody()
+void HttpWorkerThread::workBody()
 {
     list<Req>& reqList = pServerSock_->getReqList();
 
@@ -144,20 +143,16 @@ void HttpServerThread::workBody()
         if (!parseRet)
         {
             log_error("parse http error");
-            lock_guard<std::mutex> lock(HttpServerThread::socketMutex_);
-            Server::getInstance().closeSocket(req_.fd);
+            Server::getInstance().closeSocket(req_.sock);
             continue;
         }
 
-        SocketBase *sock;
+        shared_ptr<SocketBase> sock;
 
         // Check if the socket is still valid in case it's closed by remote peer.
-        {
-            lock_guard<std::mutex> lock(HttpServerThread::socketMutex_);
-            sock = Server::getInstance().getSocketByFd(req_.fd);
-        }
+        sock = Server::getInstance().getSocketByFd(req_.fd);
 
-        if (sock == nullptr || sock != req_.sock)
+        if (!sock || sock.get() != req_.sock || sock->fd() != req_.fd)
         {
             log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
             continue;
@@ -203,7 +198,12 @@ void HttpServerThread::workBody()
                 while (file.good())
                 {
                     size_t readLen = file.read(buf.data(), bufSize).gcount();
-                    sock->write((uint8_t*)buf.data(), readLen);
+                    int ret = sock->write((uint8_t*)buf.data(), readLen);
+                    if (ret == -1)
+                    {
+                        log_error("Error when writing socket buffer! errno=%d error str:%s ", errno, strerror(errno));
+                        break;
+                    }
                 }
             }
             file.close();
@@ -217,10 +217,7 @@ void HttpServerThread::workBody()
             sock->sendStr("Can't find "+ uri +"!<br>\n");
         }
 
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            Server::getInstance().closeSocket(req_.fd);
-        }
+        Server::getInstance().closeSocket(sock.get());
 
         log_debug("Handle request done, exit workBody\n");
     }

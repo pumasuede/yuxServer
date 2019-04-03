@@ -39,22 +39,21 @@ private:
     std::list<Req> reqList_;
 };
 
-class HttpServerThread : public yux::base::Thread
+class HttpWorkerThread : public yux::base::Thread
 {
 public:
-    HttpServerThread(const std::string& name, HttpServerSocket *pServerSock) : yux::base::Thread(name), pServerSock_(pServerSock) { }
+    HttpWorkerThread(const std::string& name, HttpServerSocket *pServerSock) : yux::base::Thread(name), pServerSock_(pServerSock) { }
     void setServerSocket(HttpServerSocket* pServerSock) { pServerSock_ = pServerSock; }
     void handleScript(yux::parser::HttpRequest& httpReq);
     virtual void workBody();
     friend class HttpServerSocket;
 private:
-    Req req_; // current sockrt request;
+    Req req_; // current socket request;
     FastCgi   fastCgi_;
     HttpServerSocket* pServerSock_;
     yux::parser::HttpRequestParser httpParser_;
     static std::mutex mutex_;
     static std::condition_variable cv_;
-    static std::mutex socketMutex_;
 };
 
 }}

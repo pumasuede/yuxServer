@@ -54,7 +54,7 @@ class SocketBase
 
         SocketBase();
         SocketBase(int fd, const Peer& remote): fd_(fd), remote_(remote) {}
-        virtual ~SocketBase() { close(); }
+        virtual ~SocketBase();
 
         virtual void init() {}
         int fd() { return fd_; }
@@ -93,7 +93,7 @@ class Socket : public SocketBase
         int write(uint8_t* buf, size_t size);
 };
 
-// Sever socket
+// Server socket
 class ServerSocket : public SocketBase
 {
     public:

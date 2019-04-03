@@ -30,6 +30,12 @@ SocketBase::SocketBase()
     fd_ = socket(PF_INET, SOCK_STREAM, 0);
 }
 
+SocketBase::~SocketBase()
+{
+    log_debug("Socket %p is being deleted, fd_:%d", this, fd_);
+    ::close(fd_);
+}
+
 void SocketBase::close()
 {
     ::close(fd_);
@@ -99,7 +105,7 @@ int Socket::read()
         else
         {
             // True Error
-            cout<<"Error when reading socket buffer! errno="<<errno<<endl;
+            log_error("Error when reading socket buffer! errno=%d error str:%s ", errno, strerror(errno));
             return -1;
         }
     }
@@ -139,7 +145,7 @@ int Socket::write(uint8_t* buf, size_t size)
         writeBytes = ::write(fd_, &buf[offset], tmpSize);
         if (writeBytes > 0)
         {
-            log_debug("write %d bytes", writeBytes);
+            log_trace("write %d bytes", writeBytes);
             offset += writeBytes;
             continue;
         }
@@ -157,12 +163,12 @@ int Socket::write(uint8_t* buf, size_t size)
         }
         else
         {
-            log_error("Error when writing socket buffer! errno=%d", errno);
+            log_error("Error when writing socket buffer! errno=%d error str:%s", errno, strerror(errno));
             return -1;
         }
     }
 
-    log_debug("Socket::write - sent %d bytes to client", offset);
+    log_trace("Socket::write - sent %d bytes to client", offset);
     return 0;
 }
 
@@ -185,7 +191,7 @@ SocketBase* ServerSocket::accept()
     sockaddr_in  clientAddr;
     socklen_t    addrLen = sizeof(clientAddr);
     int newFd = ::accept(fd_, (sockaddr*) &clientAddr, &addrLen);
-    cout<<"new client from ["<<inet_ntoa(clientAddr.sin_addr)<<":"<<ntohs(clientAddr.sin_port)<<"] on Fd:"<<newFd<<"...\n";
+    log_debug("new client from [%s] on Fd %d", inet_ntoa(clientAddr.sin_addr), newFd);
     Peer remote(inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 
     SocketBase *sock = new Socket(newFd, remote);

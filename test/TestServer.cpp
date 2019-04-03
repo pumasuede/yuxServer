@@ -14,7 +14,7 @@ int readCallBack(const char* buf, size_t size, SocketBase *sock)
     cout<<"read callback - "<<size<<" bytes:"<<buf<<endl;
     FILE * fp;
     char buffer[80];
-    fp=popen(recvBuf.c_str(), "r");
+    fp = popen(recvBuf.c_str(), "r");
     while (fgets(buffer, sizeof(buffer),fp))
     {
         cout<<buffer;

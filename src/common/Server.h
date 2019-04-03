@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <memory>
 #include <vector>
 #include <list>
 #include <set>
@@ -34,16 +35,15 @@ class Server
         void addTimer(Timer* timer);
         void addTimer(int intval, Timer::TimerCallBack timerCb);
         void addServerSocket(SocketBase* pServerSocket);
-        void regSocket(SocketBase* pSocket) { fdToSkt_[pSocket->fd()] = pSocket; }
-        void closeSocket(SocketBase* sock) { closeSocket(sock->fd()); }
-        void closeSocket(int fd);
-        SocketBase* getSocketByFd(int fd) { return fdToSkt_[fd]; }
+        void regSocket(SocketBase* pSocket);
+        void closeSocket(SocketBase* pSocket);
+        std::shared_ptr<SocketBase> getSocketByFd(int fd) { std::lock_guard<std::mutex> lock(mutex_); return fdToSkt_[fd]; }
 
     private:
         Server() {};
         yux::base::Timer* getMinTimer(int current);
         std::set<SocketBase*> servSockList_;
-        std::vector<SocketBase*> fdToSkt_;
+        std::vector<std::shared_ptr<SocketBase>> fdToSkt_;
         std::list<Timer*> timers_;
         yux::base::Fdes* fdes_;
         bool stop_;
