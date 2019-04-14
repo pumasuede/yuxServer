@@ -1,7 +1,9 @@
 #include <iostream>
 #include <errno.h>
 #include <string.h>
+
 #include "Fde.h"
+#include "base/Log.h"
 
 using namespace std;
 
@@ -74,12 +76,12 @@ void SelectFdes::delWatch(int fd, Fde::FdEvent event)
     int watchEvents = fde->watchEvents();
     watchEvents &= ~event;
 
-    if (!watchEvents & Fde::READ)
+    if (!(watchEvents & Fde::READ))
     {
         FD_CLR(fd, &rfds_);
     }
 
-    if (!watchEvents & Fde::WRITE)
+    if (!(watchEvents & Fde::WRITE))
     {
         FD_CLR(fd, &wfds_);
     }
@@ -94,13 +96,16 @@ void SelectFdes::delWatch(int fd, Fde::FdEvent event)
     fde->setWatchEvents(watchEvents);
 }
 
-int SelectFdes::wait(int mSecTimout)
+int SelectFdes::wait(int mSecTimeout)
 {
     fd_set rfds = rfds_;
     fd_set wfds = wfds_;
     fd_set efds = efds_;
 
-    int n = select(maxFd_+1, &rfds, &wfds, &efds, 0);
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = mSecTimeout*1000;
+    int n = select(maxFd_+1, &rfds, &wfds, &efds, &tv);
 
     if (n<0)
     {
@@ -113,7 +118,7 @@ int SelectFdes::wait(int mSecTimout)
 
     readyList_.clear();
 
-    for (int i = 0; i<= maxFd_; i++)
+    for (int i = 0; i <= maxFd_; i++)
     {
         fdEvents = Fde::NONE;
         if ( FD_ISSET(i, &rfds) )
@@ -131,6 +136,7 @@ int SelectFdes::wait(int mSecTimout)
         readyList_.push_back(fde);
     }
 
+    log_trace("ready events num: %d  fd num: %d", n, readyList_.size());
     return n;
 }
 
@@ -193,9 +199,9 @@ void EpollFdes::delWatch(int fd, Fde::FdEvent event)
     fde->setWatchEvents(watchEvents);
 }
 
-int EpollFdes::wait(int mSecTimout)
+int EpollFdes::wait(int mSecTimeout)
 {
-    int n = epoll_wait(epollFd_, events_, ee_size_, mSecTimout);
+    int n = epoll_wait(epollFd_, events_, ee_size_, mSecTimeout);
     if (n<0)
         std::cout<<"Error at epoll_wait: "<<strerror(errno)<<"\n";
 
@@ -222,6 +228,7 @@ int EpollFdes::wait(int mSecTimout)
         readyList_.push_back(fde);
     }
 
+    log_trace("ready events num: %d  fd num: %d", n, readyList_.size());
     return n;
 }
 #endif

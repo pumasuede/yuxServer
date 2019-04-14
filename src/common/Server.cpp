@@ -152,10 +152,6 @@ void Server::loopOnce()
     }
 
     vector<Fde*>& readyFdes = fdes_->readyList();
-    if (n != readyFdes.size())
-    {
-        cout<<"Warn: wait result doesn't match ready Fd events "<<n<<" : "<<readyFdes.size()<<" \n";
-    }
 
     for (auto fde : readyFdes)
     {
