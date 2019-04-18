@@ -18,9 +18,9 @@ bool HttpReqLineParser::isStartLine()
     return regex_match(lineBuf_, reg) ? true : false;
 }
 
-HttpReqStartLine HttpReqLineParser::parseStartLine()
+StartLine HttpReqLineParser::parseStartLine()
 {
-    HttpReqStartLine startLine;
+    StartLine startLine;
     std::stringstream lineStream(lineBuf_);
     lineStream>>startLine.method>>startLine.URI>>startLine.version;
 

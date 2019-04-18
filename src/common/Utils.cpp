@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <stdio.h>
+#include <string>
 
 namespace yux {
 namespace common {
@@ -124,6 +125,28 @@ int getFileSize(const std::string& filename)
 bool isBinary(const std::string& contentType)
 {
     return contentType.find("text/") == string::npos;
+}
+
+void hexDump(const char* ptr, int buflen, int fd)
+{
+    unsigned char *buf = (unsigned char*) ptr;
+    int i, j, n;
+    char str[128];
+    for (i=0; i < buflen; i+=16)
+    {
+        int n = sprintf(str, "%06x: ", i);
+        for (j = 0; j < 16; j++)
+            if (i + j < buflen)
+                n += sprintf(str + n , "%02x ", buf[i+j]);
+            else
+                n += sprintf(str + n, "   ");
+        n += sprintf(str + n, " |");
+        for (j = 0; j < 16; j++)
+            if (i + j < buflen)
+                n += sprintf(str + n, "%c", isprint(buf[i+j]) ? buf[i+j] : '.');
+        n += sprintf(str + n, "\n");
+        write(fd, str, n);
+    }
 }
 
 }} //name space

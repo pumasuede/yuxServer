@@ -3,13 +3,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <iostream>
-#include <fstream>
 #include <array>
 
 #include "HttpServerSocket.h"
 #include "HttpConfig.h"
 
 #include "base/Log.h"
+#include "common/Utils.h"
 #include "common/Config.h"
 #include "common/Server.h"
 
@@ -49,26 +49,90 @@ void HttpServerSocket::setMimeFile(const string& mimeFile)
     mimeFile_ = mimeFile;
 }
 
+void HttpServerSocket::closeSocket(SocketBase* sock)
+{
+    if (recvInfoTable_.find(sock) != recvInfoTable_.end())
+    {
+        recvInfoTable_.erase(sock);
+    }
+
+    Server::getInstance().closeSocket(sock);
+}
+
 int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
-    static int seq = 1;
-    static string recvData;
+    static int seq = 0;
+
+    RecvInfo& recvInfo = recvInfoTable_[sock];
+    string& recvBuf = recvInfo.recvBuf; // received data per socket.
+    int& bodyCnt = recvInfo.bodyCnt;
+    int& contentLength = recvInfo.contentLength;
+    bool& hasBody = recvInfo.hasBody;
+
     string tmpData(buf, size);
-    recvData += tmpData;
+    recvBuf += tmpData;
     log_trace("  <RAW tmp data>:%s...\n", tmpData.substr(0, 30).c_str());
-    if (tmpData.find("\r\n\r\n") == string::npos)
+
+    if (!hasBody && tmpData.find("\r\n\r\n") == string::npos)
     {
         log_debug("Wait for more data");
         return 0;
     }
 
+    if (!hasBody)
+    {
+        // header is receieved. Parse it first to determin if we need to received more data;
+        HttpRequest httpReq;
+        bool parseRet = httpParser_.parse(httpReq, recvBuf.c_str(), recvBuf.size());
+        if (!parseRet)
+        {
+            sock->sendStr("HTTP/1.1 411 Length Required\r\n");
+            sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
+
+            log_fatal("parse http error");
+            log_hexdump(recvBuf.c_str(), recvBuf.size());
+            closeSocket(sock);
+            return 0;
+        }
+
+        if (httpReq.startLine.method == "POST")
+        {
+            hasBody = true;
+            bodyCnt = httpReq.body.size();
+            contentLength = std::stoi(httpReq.header["Content-Length"]);
+            if (contentLength == 0)
+            {
+                sock->sendStr("HTTP/1.1 411 Length Required\r\n");
+                sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
+
+                log_fatal("Post request has no Content-Length");
+                log_hexdump(recvBuf.c_str(), recvBuf.size());
+                closeSocket(sock);
+            }
+        }
+    }
+    else
+    {
+        // Already received request header. continue to received body;
+        bodyCnt += tmpData.size();
+    }
+
+    if (bodyCnt < contentLength)
+    {
+        // Wait for more data;
+        return 0;
+    }
+
+    // Now we have the entire HTTP message.
+    log_debug("<Recv HTTP seq:%d fd:%d  message size:%d, body size:%d", seq, sock->fd(), recvBuf.size(), bodyCnt);
+    log_trace_hexdump(recvBuf.c_str(), recvBuf.size());
+
     Req req;
     req.fd = sock->fd();
     req.sock = sock;
-    req.data = recvData;
-    log_trace("\n<Recv HTTP seq:%d fd:%d>:\n%s", seq, req.fd, recvData.c_str());
+    req.data = std::move(recvBuf);
 
-    if (recvData.size() > 0)
+    if (req.data.size() > 0)
     {
         lock_guard<std::mutex> lock(HttpWorkerThread::mutex_);
         req.seq = seq++;
@@ -76,8 +140,43 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
         HttpWorkerThread::cv_.notify_all();
     }
 
-    recvData.clear();
+    recvInfoTable_.erase(sock);
     return 0;
+}
+
+void HttpWorkerThread::handleStatic(HttpRequest& httpReq, ifstream& fs)
+{
+    const string& scriptName = httpReq.startLine.scriptName;
+
+    string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
+    string localFile = pServerSock_->getDocRoot() + scriptName;
+
+    string contentType = MimeConfig::getInstance()->get(fileExt, "");
+    bool isBin = isBinary(contentType);
+
+    // process static request
+    int fileSize = getFileSize(localFile);
+    log_debug("Process static %s file request. File size: %d", isBin ? "binary" : "text", fileSize);
+    SocketBase* sock = req_.sock;
+
+    sock->sendStr("Content-Type: " + contentType + "\r\n");
+    sock->sendStr("Content-Length: " + to_string(fileSize) + "\r\n");
+    sock->sendStr("Connection: Keep-Alive\r\n");
+    sock->sendStr("\r\n");
+
+    std::array<char, 8192> buf;
+    int bufSize = buf.size();
+
+    while (fs.good())
+    {
+        size_t readLen = fs.read(buf.data(), bufSize).gcount();
+        int ret = sock->write((uint8_t*)buf.data(), readLen);
+        if (ret == -1)
+        {
+            log_error("Error when writing socket buffer! errno=%d error str:%s ", errno, strerror(errno));
+            break;
+        }
+    }
 }
 
 void HttpWorkerThread::handleScript(HttpRequest& httpReq)
@@ -110,7 +209,7 @@ void HttpWorkerThread::handleScript(HttpRequest& httpReq)
 
     if (httpReq.startLine.method == "POST" || httpReq.startLine.method == "PUT")
     {
-        log_trace("send %s data: %s", httpReq.startLine.method.c_str(), httpReq.body.c_str());
+        log_trace("send %s data. body size:%d", httpReq.startLine.method.c_str(), httpReq.body.size());
         fastCgi_.setPostData(httpReq.body);
     }
 
@@ -136,13 +235,14 @@ void HttpWorkerThread::workBody()
 
         HttpRequest httpReq;
 
+        // parse the entire http message.
         bool parseRet = httpParser_.parse(httpReq, req_.data.c_str(), req_.data.size());
         const string& uri = httpReq.startLine.URI;
         log_debug("Process http request seq:%d uri:%s", req_.seq, uri.c_str());
 
         if (!parseRet)
         {
-            log_error("parse http error");
+            log_fatal("parse http error");
             Server::getInstance().closeSocket(req_.sock);
             continue;
         }
@@ -178,33 +278,7 @@ void HttpWorkerThread::workBody()
             }
             else
             {
-                // process static request
-                int fileSize = getFileSize(localFile);
-                log_debug("Process static %s file request. File size: %d", isBin ? "binary" : "text", fileSize);
-
-                sock->sendStr("Content-Type: " + contentType + "\r\n");
-
-                if (isBin)
-                {
-                    sock->sendStr("Content-Length: " + to_string(fileSize) + "\r\n");
-                }
-                sock->sendStr("Connection: Keep-Alive\r\n");
-
-                sock->sendStr("\r\n");
-
-                std::array<char, 4096> buf;
-                int bufSize = buf.size();
-
-                while (file.good())
-                {
-                    size_t readLen = file.read(buf.data(), bufSize).gcount();
-                    int ret = sock->write((uint8_t*)buf.data(), readLen);
-                    if (ret == -1)
-                    {
-                        log_error("Error when writing socket buffer! errno=%d error str:%s ", errno, strerror(errno));
-                        break;
-                    }
-                }
+                handleStatic(httpReq, file);
             }
             file.close();
         }

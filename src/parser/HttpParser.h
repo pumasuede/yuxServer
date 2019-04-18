@@ -10,7 +10,7 @@ namespace yux
 namespace parser
 {
 
-struct HttpReqStartLine
+struct StartLine
 {
     std::string method;
     std::string URI;
@@ -22,7 +22,7 @@ struct HttpReqStartLine
 
 struct HttpRequest
 {
-    HttpReqStartLine startLine;
+    StartLine startLine;
     std::map<std::string, std::string> header;
     std::string body;
 };
@@ -46,7 +46,7 @@ class HttpReqLineParser : public HttpLineParser
         // parse a line.  return true if parse sucessfully
         HttpReqLineParser(const char *begin, uint32_t size) : HttpLineParser(begin, size) { }
         virtual bool isStartLine() override;
-        virtual HttpReqStartLine parseStartLine();
+        virtual StartLine parseStartLine();
         bool parse(HttpRequest& req);
 };
 

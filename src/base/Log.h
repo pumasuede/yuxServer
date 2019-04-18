@@ -63,6 +63,7 @@ class Logger
     public:
         ~Logger();
 
+        int fd() { return fd_; }
         int level() { return level_; }
         void set_level(int level) { level_ = level;}
 
@@ -72,12 +73,12 @@ class Logger
 
         int logv(int level, const char *fmt, va_list ap);
 
-        int trace(const char *fmt, ...);
-        int debug(const char *fmt, ...);
-        int info(const char *fmt, ...);
-        int warn(const char *fmt, ...);
-        int error(const char *fmt, ...);
         int fatal(const char *fmt, ...);
+        int error(const char *fmt, ...);
+        int warn(const char *fmt, ...);
+        int info(const char *fmt, ...);
+        int debug(const char *fmt, ...);
+        int trace(const char *fmt, ...);
 };
 
 inline int log_open(int fd, int level=Logger::LEVEL_DEBUG) { return Logger::instance().open(fd, level); }
@@ -110,5 +111,11 @@ std::string getClassMethodName(std::string&& prettyFunction);
 #define log_fatal(fmt, args...) \
     log_write(Logger::LEVEL_FATAL, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 
+#define log_trace_hexdump(buf, size) \
+    if (yux::base::Logger::instance().level() >= Logger::LEVEL_TRACE ) \
+        yux::common::hexDump(buf, size, yux::base::Logger::instance().fd())
+
+#define log_hexdump(buf, size) \
+    yux::common::hexDump(buf, size, yux::base::Logger::instance().fd())
 }}
 #endif

@@ -47,10 +47,10 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
     string httpReq = string("GET ") + path + " HTTP/1.1\r\n";
 
     char hostLine[100] = {};
-    sprintf(hostLine, "Host: %s:%d\r\n", urlParser.host_.c_str(), urlParser.port_);
+    sprintf(hostLine, "Host: %s:%d", urlParser.host_.c_str(), urlParser.port_);
 
     httpReq += hostLine;
-    httpReq += "User-Agent: YuxHttpClient\r\n";
+    httpReq += "\r\nUser-Agent: YuxHttpClient\r\n";
     httpReq += "Connection: close\r\n";
     httpReq += "\r\n";
 

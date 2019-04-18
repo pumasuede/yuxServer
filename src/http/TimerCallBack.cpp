@@ -19,7 +19,7 @@ DECL_TIMER(Timer2Callback, 10*1000)
 
 int httpClient_readCallBack(const char* buf, size_t size, SocketBase *sock)
 {
-    log_debug("readCallBack %d bytes", size);
+    log_trace("readCallBack %d bytes", size);
     char pageFile[] = "baidu.html";
 
     int fd = open(pageFile, O_RDWR|O_APPEND);

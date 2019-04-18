@@ -15,6 +15,7 @@ std::string trim(const std::string& str);
 void writeNum(unsigned char* dest, unsigned int number, int bytes);
 int getFileSize(const std::string& filename);
 bool isBinary(const std::string& fileExt);
+void hexDump(const char* ptr, int buflen, int fd = 1);
 
 // Check if a char is a control char.
 inline bool isControl(char c)

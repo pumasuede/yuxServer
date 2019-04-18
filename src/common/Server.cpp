@@ -91,7 +91,7 @@ void Server::addServerSocket(SocketBase* pServerSocket)
 {
     int servFd = pServerSocket->fd();
     const Peer& local = pServerSocket->getLocal();
-    log_debug("listen on IP: %s and Port: %d Fd: %d", local.host_.c_str(), local.port_, servFd);
+    log_info("listen on IP: %s and Port: %d Fd: %d", local.host_.c_str(), local.port_, servFd);
     cout<<"listen on IP:"<<local.host_<<" and Port:"<<local.port_<<" Fd:"<<servFd<<"...\n";
 
     regSocket(pServerSocket);
@@ -122,7 +122,7 @@ void Server::loopOnce()
     {
         int toFire = pTimer->lastFired_ + pTimer->mSec_;
         int gap = toFire - current;
-        log_trace("nextFire/current time point: %d-%d gap=%dms", toFire, current, gap );
+        //log_trace("nextFire/current time point: %d-%d gap=%dms", toFire, current, gap );
         int timeToFire = gap > 0 ? gap : 0;
     }
 
@@ -187,7 +187,7 @@ void Server::loopOnce()
                 }
                 if (ret < 0)
                 {
-                    cout<<"Abnormal in Socket read, will delete socket - Fd: "<<fd <<"\n";
+                    log_debug("Abnormal in Socket read, will delete socket - Fd: %d", fd);
                     closeSocket(skt.get());
                 }
             }

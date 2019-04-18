@@ -136,7 +136,7 @@ int SelectFdes::wait(int mSecTimeout)
         readyList_.push_back(fde);
     }
 
-    log_trace("ready events num: %d  fd num: %d", n, readyList_.size());
+    // log_trace("ready events num: %d  fd num: %d", n, readyList_.size());
     return n;
 }
 
@@ -228,7 +228,7 @@ int EpollFdes::wait(int mSecTimeout)
         readyList_.push_back(fde);
     }
 
-    log_trace("ready events num: %d  fd num: %d", n, readyList_.size());
+    // log_trace("ready events num: %d  fd num: %d", n, readyList_.size());
     return n;
 }
 #endif

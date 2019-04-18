@@ -94,12 +94,12 @@ int Socket::read()
         if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
             // Reading buffer is complete, no available data
-            log_debug("errno == EAGAIN when reading socket buffer - all available data is read complete");
+            log_trace("errno == EAGAIN when reading socket buffer - all available data is read complete");
             break;
         }
         else if (errno == EINTR)
         {
-            log_debug("errno == EINTR when reading socket buffer");
+            log_trace("errno == EINTR when reading socket buffer");
             continue;
         }
         else
@@ -112,7 +112,7 @@ int Socket::read()
 
     // read completed
     // std::cout<<"Buf received: "<<std::to_string(offset)<<" bytes\n";
-    log_debug("Socket::read - received %d bytes", offset);
+    log_trace("Socket::read - received %d bytes", offset);
 
     if (closed)
         return 0;
@@ -126,7 +126,7 @@ int Socket::read()
         if (result == -1)
         {
             ret = -1;
-            log_debug("Socket::read - callback error!");
+            log_fatal("Socket::read - callback error!");
             break;
         }
     }

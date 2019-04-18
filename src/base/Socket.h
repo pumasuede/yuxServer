@@ -72,7 +72,7 @@ class SocketBase
         virtual void close();
 
     protected:
-        #define BUF_SIZE 4096
+        #define BUF_SIZE 8192
         int fd_;
         char rdBuf_[BUF_SIZE];
         Peer remote_;
