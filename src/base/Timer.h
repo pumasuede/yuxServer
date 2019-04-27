@@ -14,7 +14,7 @@ namespace base {
 struct Timer
 {
     typedef std::function<int (void*)> TimerCallBack;
-    Timer(int mSec, TimerCallBack timerCb): mSec_(mSec), timerCb_(timerCb), lastFired_(-1) { }
+    Timer(int mSec, const TimerCallBack& timerCb): mSec_(mSec), timerCb_(timerCb), lastFired_(-1) { }
 
     int mSec_;
     int lastFired_;
@@ -23,7 +23,7 @@ struct Timer
 
 std::vector<Timer>& getTimers();
 
-bool regTimer(Timer::TimerCallBack cb, int mSec);
+bool regTimer(const Timer::TimerCallBack& cb, int mSec);
 
 }}//namespace
 

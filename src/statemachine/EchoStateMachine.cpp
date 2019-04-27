@@ -26,12 +26,12 @@ int EchoServer::Init(const Event &event, SocketBase* sock)
     body->SetExtension(echo::message, event.desc_);
 
     uint32_t messageSize = msg.ByteSize();
-    uint8_t* buffer      = NULL;
+    uint8_t* buffer      = new uint8_t[messageSize];
 
-    buffer = new uint8_t[messageSize];
     msg.SerializeWithCachedSizesToArray(buffer);
 
     sock->send(buffer, messageSize);
+    delete[] buffer;
     state_ = STATE_WAIT;
     return 0;
 }

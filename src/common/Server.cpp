@@ -21,7 +21,7 @@ Server& Server::getInstance()
     return server;
 }
 
-void Server::init(std::string host, uint16_t port, SocketBase::CallBack cbRead, Timer* timer)
+void Server::init(std::string host, uint16_t port, const SocketBase::CallBack& cbRead, Timer* timer)
 {
     // Create socket
     init();
@@ -56,7 +56,7 @@ void Server::addTimer(Timer* timer)
     timers_.push_back(timer);
 }
 
-void Server::addTimer(int intval, Timer::TimerCallBack timerCb)
+void Server::addTimer(int intval, const Timer::TimerCallBack& timerCb)
 {
     Timer *timer = new Timer(intval, timerCb);
     timers_.push_back(timer);
@@ -100,9 +100,14 @@ void Server::addServerSocket(SocketBase* pServerSocket)
 
 Server::~Server()
 {
-    for (auto sock : servSockList_)
+    for (auto& sock : servSockList_)
     {
         delete sock;
+    }
+
+    for (auto& timer : timers_)
+    {
+        delete timer;
     }
 
     delete fdes_;
@@ -141,7 +146,7 @@ void Server::loopOnce()
         gettimeofday(&tv, NULL);
         int current = tv.tv_sec*1000 + tv.tv_usec/1000;
 
-        for (auto timer : timers_)
+        for (auto& timer : timers_)
         {
             if (timer->lastFired_ + timer ->mSec_ < current+10)
             {

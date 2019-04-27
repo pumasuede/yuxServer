@@ -97,6 +97,7 @@ class EpollFdes : public Fdes
 {
     public:
         EpollFdes(): ee_size_(100), epollFd_(0) { init(); }
+        ~EpollFdes() { delete[] epollEvents_; }
         void init();
         int wait(int mSecTimeout);
         void addWatch(int fd, Fde::FdEvent event);
@@ -106,7 +107,7 @@ class EpollFdes : public Fdes
         int epollFd_;
         const int ee_size_;
         // epoll events
-        struct epoll_event *events_;
+        struct epoll_event *epollEvents_;
 };
     #define FDES Singleton<EpollFdes>
 #else

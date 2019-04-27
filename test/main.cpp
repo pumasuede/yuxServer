@@ -14,6 +14,7 @@ void MainThread::workBody()
 {
     Thread *pThread = new Thread("work thread", this);
     pThread->start();
+    pThread->detach();
 
     int i = 0;
     while (1)
@@ -30,7 +31,6 @@ int main()
     Thread *main = new MainThread();
 
     main->start();
-    main->join();
 
     //log_debug("line %d\n", 1);
 }

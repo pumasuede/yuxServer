@@ -56,6 +56,7 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
 
     log_debug("Sending request on fd:%d %s", fd_, hostLine);
     sendStr(httpReq);
+    return 0;
 }
 
 }} //name space

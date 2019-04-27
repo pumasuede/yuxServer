@@ -17,6 +17,7 @@ class Thread
 protected:
     std::string     name_;
     size_t          id_;     // For thread manager
+    std::thread::id tid_;
     std::thread     *thr_;
     Thread          *parent_;
     bool            stop_;
@@ -24,15 +25,18 @@ protected:
 
 public:
     Thread(const std::string& name, Thread *parent = NULL);
-    virtual ~Thread() { delete thr_; }
-    inline std::thread::id start();
-    inline void stop();
-    void join() { thr_->join(); }
-    void detach() { thr_->detach(); }
-    std::thread::id getTid() { return thr_->get_id(); }
+    virtual ~Thread();
+
+    size_t getId() { return id_; }
+    std::thread::id getTid() { return tid_; }
     std::string& getName() { return name_; }
 
-    virtual void didStart() {};
+    inline std::thread::id start();
+    void stop() { stop_  = true; }
+    void join() { thr_->join(); }
+    void detach() { thr_->detach(); }
+
+    virtual void didStart() { }
     virtual void workBody();
 };
 
@@ -40,40 +44,35 @@ class ThreadManager
 {
     std::mutex mutex_;
     std::map<uint32_t, Thread*> threadTable_;
-    size_t next_id_;
-    static ThreadManager m_;
-    ThreadManager() : next_id_(0) {}
+    size_t nextId_;
 
 public:
-    static ThreadManager* getInstance();
+    ThreadManager() : nextId_(0) {}
+    ~ThreadManager();
     size_t addThread(Thread* pThr);
-    size_t dropThread(Thread* pThr) { return 0; }
+    void dropThread(Thread* pThr);
     void dump();
 };
 
+// Use inline here so libBase.so will not need to link pthread
+// pthread is needed only when Thread is really used.
 std::thread::id Thread::start()
 {
-    std::thread::id tid;
     if (id_)
     {
         // Start work thread
         thr_ = new std::thread(&Thread::threadEntry, this);
-        tid = thr_->get_id();
-        log_debug("Thread %d created - Tid: %x ..", id_, tid);
+        tid_ = thr_->get_id();
+        log_trace("Thread %d started - Tid: %x ..", id_, tid_);
     }
     else
     {
         // Main thread if id_== 0;
         workBody();
-        tid = std::this_thread::get_id();
+        tid_ = std::this_thread::get_id();
     }
 
-    return tid;
-}
-
-inline void Thread::stop()
-{
-    stop_ = true;
+    return tid_;
 }
 
 }}

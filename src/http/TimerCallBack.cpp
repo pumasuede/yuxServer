@@ -48,6 +48,7 @@ int Timer1Callback(void* pServer)
 int Timer2Callback(void*)
 {
     log_debug("*** Timer2Callback called ");
+    return 0;
 }
 
 }} // name space

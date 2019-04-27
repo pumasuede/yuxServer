@@ -22,13 +22,12 @@ Fde* Fdes::getFde(int fd)
 
 Fdes::~Fdes()
 {
-    std::vector<Fde*>::iterator it = fdeList_.begin();
     int fdMax = 0;
-    while (it != fdeList_.end())
+    for (auto& fde : fdeList_)
     {
-        delete *it;
-        ++it;
+        delete fde;
     }
+
     fdeList_.clear();
     readyList_.clear();
 }
@@ -102,12 +101,19 @@ int SelectFdes::wait(int mSecTimeout)
     fd_set wfds = wfds_;
     fd_set efds = efds_;
 
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = mSecTimeout*1000;
-    int n = select(maxFd_+1, &rfds, &wfds, &efds, &tv);
+    struct timeval tv, *pTv = nullptr;
+    if (mSecTimeout != -1)
+    {
+        tv.tv_sec = 0;
+        tv.tv_usec = mSecTimeout*1000;
+        pTv = &tv;
+    }
 
-    if (n<0)
+    readyList_.clear();
+
+    int n = select(maxFd_+1, &rfds, &wfds, &efds, pTv);
+
+    if (n < 0)
     {
         std::cout<<"Error at select: "<<strerror(errno)<<"\n";
         return n;
@@ -115,8 +121,6 @@ int SelectFdes::wait(int mSecTimeout)
 
     Fde *fde;
     int fdEvents;
-
-    readyList_.clear();
 
     for (int i = 0; i <= maxFd_; i++)
     {
@@ -147,7 +151,7 @@ void EpollFdes::init()
 {
     if (!init_)
     {
-        events_ = new struct epoll_event[ee_size_];
+        epollEvents_ = new struct epoll_event[ee_size_];
         epollFd_ = epoll_create(10);
         init_ = true;
     }
@@ -201,16 +205,16 @@ void EpollFdes::delWatch(int fd, Fde::FdEvent event)
 
 int EpollFdes::wait(int mSecTimeout)
 {
-    int n = epoll_wait(epollFd_, events_, ee_size_, mSecTimeout);
-    if (n<0)
-        std::cout<<"Error at epoll_wait: "<<strerror(errno)<<"\n";
-
     readyList_.clear();
+
+    int n = epoll_wait(epollFd_, epollEvents_, ee_size_, mSecTimeout);
+    if (n < 0)
+        std::cout<<"Error at epoll_wait: "<<strerror(errno)<<"\n";
 
     for (int i = 0; i < n; i++)
     {
-        int fd = events_[i].data.fd;
-        uint32_t events = events_[i].events;
+        int fd = epollEvents_[i].data.fd;
+        uint32_t events = epollEvents_[i].events;
         int fdEvents = Fde::NONE;
 
         if (events & EPOLLIN)

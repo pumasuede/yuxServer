@@ -18,7 +18,6 @@ addrinfo* Peer::addr()
     {
        char port[8] = {0};
        sprintf(port, "%d", port_);
-       addr_ = new addrinfo();
        getaddrinfo(host_.c_str(), port, NULL, &addr_);
     }
 

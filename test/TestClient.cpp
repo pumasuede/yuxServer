@@ -33,12 +33,14 @@ int main(int argc, char** argv)
     buffer = new uint8_t[messageSize];
     msg.SerializeWithCachedSizesToArray( buffer );
     sock.send(buffer, messageSize);
+    delete[] buffer;
 
     uint8_t recvBuf[10000];
     Msg recvMsg;
     int ret = sock.recv(recvBuf, sizeof(recvBuf));
     recvMsg.ParseFromArray(recvBuf, ret);
     cout<<"received msg:\n"<<recvMsg.DebugString()<<"\n";
+
     while (1)
     {
         sleep(10);

@@ -34,11 +34,11 @@ SET(CMAKE_INSTALL_PREFIX ../../install)
 
 IF (DEFINED ENV{GPB_DIR})
     ADD_EXECUTABLE(yuxServer Main.cpp)
-    TARGET_LINK_LIBRARIES(yuxServer StateMachine Pbout)
+    TARGET_LINK_LIBRARIES(yuxServer StateMachine)
     INSTALL(TARGETS yuxServer DESTINATION bin)
 ENDIF()
 
-ADD_EXECUTABLE(yuHttpd  Httpd.cpp )
+ADD_EXECUTABLE(yuHttpd  Httpd.cpp)
 TARGET_LINK_LIBRARIES(yuHttpd Http pthread)
 
 INSTALL(TARGETS yuHttpd DESTINATION bin)

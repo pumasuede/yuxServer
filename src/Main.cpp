@@ -20,14 +20,14 @@ using namespace yux::common;
 string server_ip = "0.0.0.0";
 uint16_t server_port = DEFAUL_PORT;
 
-void print_help(const char* name)
+void printHelp(const char* name)
 {
     cout<<"Usage: "<<name<<" -ap \n";
     cout<<"--ip  Server IP\n";
     cout<<"--port  Server port\n";
 }
 
-int parse_arg(int argc, char* argv[])
+int parseArg(int argc, char* argv[])
 {
     struct option long_opts[] =
     {
@@ -42,8 +42,9 @@ int parse_arg(int argc, char* argv[])
     {
         int idx = 0;
         c = getopt_long( argc, argv, "a:p:", long_opts, &idx);
-        if (c<0)
+        if (c < 0)
             break;
+
         switch ( c )
         {
             case 'a':
@@ -53,7 +54,7 @@ int parse_arg(int argc, char* argv[])
                 server_port = atoi(optarg);
                 break;
             default:
-                print_help(argv[0]);
+                printHelp(argv[0]);
                 exit(1);
                 break;
         }
@@ -64,7 +65,7 @@ int parse_arg(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     log_open("Server.log");
-    parse_arg(argc, argv);
+    parseArg(argc, argv);
 
     Server& mainServer = Server::getInstance();
     mainServer.init();

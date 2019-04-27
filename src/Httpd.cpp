@@ -26,14 +26,14 @@ string serverIP = "0.0.0.0";
 uint16_t serverPort = DEFAULT_PORT;
 string configFile = "config";
 
-void print_help(const char* name)
+void printHelp(const char* name)
 {
     cout<<"Usage: "<<name<<" -ap \n";
     cout<<"-p --port  Server port\n";
     cout<<"-c --config  Config file path\n";
 }
 
-int parse_arg(int argc, char* argv[])
+int parseArg(int argc, char* argv[])
 {
     struct option long_opts[] =
     {
@@ -48,8 +48,10 @@ int parse_arg(int argc, char* argv[])
     {
         int idx = 0;
         c = getopt_long(argc, argv, "p:c:", long_opts, &idx);
-        if (c<0)
+
+        if (c < 0)
             break;
+
         switch ( c )
         {
             case 'p':
@@ -59,7 +61,7 @@ int parse_arg(int argc, char* argv[])
                 configFile = optarg;
                 break;
             default:
-                print_help(argv[0]);
+                printHelp(argv[0]);
                 exit(1);
                 break;
         }
@@ -95,12 +97,14 @@ void MainThread::workBody()
         pThread->detach();
     }
 
+    Singleton<ThreadManager>::getInstance()->dump();
+
     mainServer.loop();
 }
 
 int main(int argc, char* argv[])
 {
-    parse_arg(argc, argv);
+    parseArg(argc, argv);
 
     // Load config
     Config* pConfig = Config::getInstance();
@@ -109,14 +113,15 @@ int main(int argc, char* argv[])
     serverPort = stoi(port);
     string logFile = pConfig->get("log_file", "httpd.log");
     string logLevel = pConfig->get("log_level", "INFO");
+
     // Open log
     log_open(logFile.c_str(), Logger::getLevel(logLevel));
 
     log_info("config file :%s", configFile.c_str());
+
     Thread *main = new MainThread();
 
     main->start();
-    main->join();
 
     return 0;
 }

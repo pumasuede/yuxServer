@@ -26,13 +26,13 @@ namespace base {
 class Peer
 {
     public :
-        Peer() : addr_(NULL) {}
-        Peer(const char *host, uint16_t port) : host_(host), port_(port), addr_(NULL) {}
-        ~Peer() { if (addr_) freeaddrinfo(addr_); }
+        Peer() : addr_(nullptr) { }
+        Peer(const char *host, uint16_t port) : host_(host), port_(port), addr_(nullptr) {}
+        ~Peer() { if (addr_) freeaddrinfo(addr_); addr_ = nullptr; }
         addrinfo* addr();
         std::string  host_;
         uint16_t     port_;
-        addrinfo*    addr_;
+        addrinfo     *addr_;
 };
 
 class SocketBase
