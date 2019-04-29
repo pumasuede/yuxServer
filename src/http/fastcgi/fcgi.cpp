@@ -174,7 +174,8 @@ void FastCgi::setPostData(const std::string& data)
 void FastCgi::sendRequest()
 {
     log_debug("Send script to FastCGI manager. requestId_=%d", requestId_);
-    // Start request
+
+    // Start request record;
     setStartRequestRecord();
 
     // Add param
@@ -183,20 +184,43 @@ void FastCgi::sendRequest()
 
     reqBuff_ += paramBody_;
 
+    // FCGI_PARAMS header with empty body means FCGI_PARAMS end.
     paramHeader = makeHeader(FCGI_PARAMS, requestId_, 0, 0);
     reqBuff_ += string((char*)&paramHeader, FCGI_HEADER_LEN);
 
     // Add data
-    FCGI_Header dataHeader = makeHeader(FCGI_STDIN, requestId_, data_.size(), 0);
+    // Data size might be greater than the limit of FCGI_STDIN
+    // So we need to split it to multiple records;
+
+    uint32_t remainSize = data_.size();
+    const uint32_t maxLen = 65535;
+    uint32_t offset = 0;
+
+    while (remainSize > maxLen)
+    {
+        FCGI_Header dataHeader = makeHeader(FCGI_STDIN, requestId_, maxLen, 0);
+        reqBuff_ += string((char*)&dataHeader, FCGI_HEADER_LEN);
+
+        reqBuff_.append(data_, offset, maxLen);
+
+        offset += maxLen;
+        remainSize -= maxLen;
+    }
+
+    // The last data record
+    FCGI_Header dataHeader = makeHeader(FCGI_STDIN, requestId_, remainSize, 0);
     reqBuff_ += string((char*)&dataHeader, FCGI_HEADER_LEN);
 
-    reqBuff_ += data_;
+    reqBuff_.append(data_, offset, remainSize);
 
+    // FCGI_PARAMS header with empty body which marks FCGI_STDIN end.
     dataHeader = makeHeader(FCGI_STDIN, requestId_, 0, 0);
     reqBuff_ += string((char*)&dataHeader, FCGI_HEADER_LEN);
 
+    // Send it
     startConnect();
-    write(sockFd_, reqBuff_.c_str(), reqBuff_.size());
+    int n = write(sockFd_, reqBuff_.c_str(), reqBuff_.size());
+    log_trace("Sent %d/%d bytes to FastCGI manager. Body size %d", n, reqBuff_.size(), data_.size());
 }
 
 void FastCgi::readFromCGI(yux::base::SocketBase *pClientSock)
