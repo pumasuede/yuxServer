@@ -73,16 +73,19 @@ class Fdes
 
 // Select
 
-class SelectFdes : public Fdes
+class SelectFdes : public Fdes, public Singleton<SelectFdes>
 {
+    friend class Singleton<SelectFdes>;
     public:
-        SelectFdes() { init();  }
         void init();
         int wait(int mSecTimeout);
         void addWatch(int fd, Fde::FdEvent event);
         void delWatch(int fd, Fde::FdEvent event);
         Fde::FdeType type() { return Fde::SELECT; }
     private:
+        SelectFdes() { init(); }
+        ~SelectFdes() {}
+
         fd_set rfds_;
         fd_set wfds_;
         fd_set efds_;
@@ -93,25 +96,27 @@ class SelectFdes : public Fdes
 // Epoll
 
 #ifdef __linux__
-class EpollFdes : public Fdes
+class EpollFdes : public Fdes, public Singleton<EpollFdes>
 {
+    friend class Singleton<EpollFdes>;
     public:
-        EpollFdes(): ee_size_(100), epollFd_(0) { init(); }
-        ~EpollFdes() { delete[] epollEvents_; }
         void init();
         int wait(int mSecTimeout);
         void addWatch(int fd, Fde::FdEvent event);
         void delWatch(int fd, Fde::FdEvent event);
         Fde::FdeType type() { return Fde::EPOLL; }
     private:
+        EpollFdes(): ee_size_(100), epollFd_(0) { init(); }
+        ~EpollFdes() { delete[] epollEvents_; }
+
         int epollFd_;
         const int ee_size_;
         // epoll events
         struct epoll_event *epollEvents_;
 };
-    #define FDES Singleton<EpollFdes>
+    #define FDES EpollFdes
 #else
-    #define FDES Singleton<SelectFdes>
+    #define FDES SelectFdes
 #endif
 
 }} //namespace

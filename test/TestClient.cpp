@@ -6,16 +6,20 @@ using namespace std;
 using namespace msg;
 using namespace yux::base;
 
-int readCallBack(const char* buf, size_t size, SocketBase *sock)
+class MyObserver : public SocketObserver
 {
-    return 0;
+    void onReadEvent(SocketBase *sock, const char* buf, size_t size);
+};
+
+void MyObserver::onReadEvent(SocketBase *sock, const char* buf, size_t size)
+{
+    return;
 }
 
 int main(int argc, char** argv)
 {
-    Socket sock;
-    sock.regReadCallBack(bind(&readCallBack, _1, _2, _3));
-    sock.connect("127.0.0.1", 8000);
+    Socket sock(new MyObserver);
+    sock.connect("127.0.0.1", 7777);
 
     Msg msg;
     Header* hdr = msg.mutable_header();

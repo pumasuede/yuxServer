@@ -6,13 +6,14 @@
 namespace yux{
 namespace http{
 
-class HttpClientSocket : public yux::base::Socket
+class HttpClientSocket : public yux::base::Socket, public yux::base::SocketObserver
 {
     public:
-        HttpClientSocket() { }
-        HttpClientSocket(const std::string& host, uint16_t port = 80) : yux::base::Socket(host.c_str(), port) { }
-        int request(const std::string& url, CallBack cb);
-        int readCallBack(const char* buf, size_t size, SocketBase *sock);
+        HttpClientSocket() { addObserver(this); }
+        HttpClientSocket(SocketObserver* pObserver) { addObserver(pObserver); }
+        void onReadEvent(SocketBase *sock, const char* buf, size_t size);
+
+        int request(const std::string& url);
         void setTimeout(uint32_t timeOut) { m_timeOut = timeOut; }
         void close();
     private:

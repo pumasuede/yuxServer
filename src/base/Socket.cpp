@@ -32,11 +32,12 @@ SocketBase::SocketBase()
 SocketBase::~SocketBase()
 {
     log_debug("Socket %p is being deleted, fd_:%d", this, fd_);
-    ::close(fd_);
+    close();
 }
 
 void SocketBase::close()
 {
+    notifyCloseEvents(this);
     ::close(fd_);
 }
 
@@ -58,7 +59,9 @@ void SocketBase::setNonBlocking()
 
 int Socket::connect()
 {
-    return ::connect(fd_, remote_.addr()->ai_addr, remote_.addr()->ai_addrlen);
+    int rc = ::connect(fd_, remote_.addr()->ai_addr, remote_.addr()->ai_addrlen);
+    notifyOpenEvents(this);
+    return rc;
 }
 
 int Socket::read()
@@ -116,21 +119,10 @@ int Socket::read()
     if (closed)
         return 0;
 
-    int ret = 1;
+    // Do callback for READ event
+    notifyReadEvents(this, rdBuf_, offset);
 
-    // do callback for READ event
-    for ( auto callback : callBackList_[SocketEvent::READ])
-    {
-        int result = callback(rdBuf_, offset, this);
-        if (result == -1)
-        {
-            ret = -1;
-            log_fatal("Socket::read - callback error!");
-            break;
-        }
-    }
-
-    return ret;
+    return 1;
 }
 
 int Socket::write(uint8_t* buf, size_t size)
@@ -171,6 +163,18 @@ int Socket::write(uint8_t* buf, size_t size)
     return 0;
 }
 
+ServerSocket::ServerSocket(const char* host, uint16_t port, ISocketObserver* pObserver)
+{
+    bind(host, port);
+
+    if (pObserver)
+    {
+        addObserver(pObserver);
+    }
+
+    listen();
+}
+
 int ServerSocket::bind(const char* host, uint16_t port)
 {
    local_ = Peer(host, port);
@@ -190,18 +194,19 @@ SocketBase* ServerSocket::accept()
     sockaddr_in  clientAddr;
     socklen_t    addrLen = sizeof(clientAddr);
     int newFd = ::accept(fd_, (sockaddr*) &clientAddr, &addrLen);
-    log_debug("new client from [%s] on Fd %d", inet_ntoa(clientAddr.sin_addr), newFd);
+    log_debug("New client from [%s] on Fd %d", inet_ntoa(clientAddr.sin_addr), newFd);
+
     Peer remote(inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 
     SocketBase *sock = new Socket(newFd, remote);
     sock->setNonBlocking();
 
-    for (int i = SocketEvent::FIRST; i< SocketEvent::LAST; i++)
+    // Do callback for ACCEPT event
+    notifyAcceptEvents(sock);
+
+    for (auto ob : observers_)
     {
-        for (auto& callback : callBackList_[i])
-        {
-            sock->regCallBack(static_cast<SocketEvent>(i), callback);
-        }
+        sock->addObserver(ob);
     }
 
     return sock;

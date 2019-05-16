@@ -19,11 +19,11 @@ static uint32_t MYID = 1000;
 class EchoServer: public StateMachine<EchoServer>
 {
 public:
-    typedef enum
+    enum State
     {
         STATE_INIT = -1,
         STATE_WAIT = 1
-    }  enumState;
+    };
 
     int Init(const Event &event, SocketBase* sock);
     int Response(const Event &event, SocketBase* sock);

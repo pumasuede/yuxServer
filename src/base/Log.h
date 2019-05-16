@@ -20,14 +20,17 @@
 #include <thread>
 #include <mutex>
 
+#include "Singleton.h"
+
 #ifndef _YUX_LOG_H__
 #define _YUX_LOG_H__
 
 namespace yux{
 namespace base{
 
-class Logger
+class Logger : public Singleton<Logger>
 {
+    friend class Singleton<Logger>;
     public:
         enum LogLevel
         {
@@ -42,10 +45,12 @@ class Logger
             LEVEL_MAX     = 5,
         };
 
-        static Logger& instance();
         static int getLevel(const std::string& levelname);
 
     private:
+        Logger();
+        ~Logger();
+
         std::string fileName_;
         int fd_;
         int level_;
@@ -58,11 +63,8 @@ class Logger
             uint64_t w_total;
         } stats_;
 
-        Logger();
         void rotate();
     public:
-        ~Logger();
-
         int fd() { return fd_; }
         int level() { return level_; }
         void set_level(int level) { level_ = level;}
@@ -81,11 +83,11 @@ class Logger
         int trace(const char *fmt, ...);
 };
 
-inline int log_open(int fd, int level=Logger::LEVEL_DEBUG) { return Logger::instance().open(fd, level); }
-inline int log_open(const char *filename, int level=Logger::LEVEL_DEBUG, uint64_t rotateSize=0) { return Logger::instance().open(filename, level, rotateSize); }
+inline int log_open(int fd, int level=Logger::LEVEL_DEBUG) { return Logger::getInstance()->open(fd, level); }
+inline int log_open(const char *filename, int level=Logger::LEVEL_DEBUG, uint64_t rotateSize=0) { return Logger::getInstance()->open(filename, level, rotateSize); }
 
-inline int log_level() { return Logger::instance().level(); }
-inline void set_log_level(int level) { Logger::instance().set_level(level); }
+inline int log_level() { return Logger::getInstance()->level(); }
+inline void set_log_level(int level) { Logger::getInstance()->set_level(level); }
 
 int log_write(int level, const char *fmt, ...);
 std::string getClassMethodName(std::string&& prettyFunction);
@@ -112,10 +114,10 @@ std::string getClassMethodName(std::string&& prettyFunction);
     log_write(Logger::LEVEL_FATAL, "[%x][%s] " fmt, __THREAD_ID__, __FUNC_STR__, ##args)
 
 #define log_trace_hexdump(buf, size) \
-    if (yux::base::Logger::instance().level() >= Logger::LEVEL_TRACE ) \
-        yux::common::hexDump(buf, size, yux::base::Logger::instance().fd())
+    if (yux::base::Logger::getInstance()->level() >= Logger::LEVEL_TRACE ) \
+        yux::common::hexDump(buf, size, yux::base::Logger::getInstance()->fd())
 
 #define log_hexdump(buf, size) \
-    yux::common::hexDump(buf, size, yux::base::Logger::instance().fd())
+    yux::common::hexDump(buf, size, yux::base::Logger::getInstance()->fd())
 }}
 #endif

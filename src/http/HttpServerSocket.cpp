@@ -26,17 +26,16 @@ std::condition_variable HttpWorkerThread::cv_;
 
 HttpServerSocket* HttpServerSocket::create(const string& host, uint16_t port)
 {
-    HttpServerSocket* pSock = new HttpServerSocket(host, port);
-    pSock->regReadCallBack(std::bind(&HttpServerSocket::readCallBack, pSock, _1, _2, _3));
+    HttpServerSocket* pServSock = new HttpServerSocket(host, port);
 
     string docRoot = Config::getInstance()->get("document_root", ".");
     string mimeFile = Config::getInstance()->get("mime_file", "mime_types");
-    pSock->setDocRoot(docRoot);
-    pSock->setMimeFile(mimeFile);
+    pServSock->setDocRoot(docRoot);
+    pServSock->setMimeFile(mimeFile);
 
     MimeConfig* pMiMeConfig = MimeConfig::getInstance();
     pMiMeConfig->loadConfigFile(mimeFile);
-    return pSock;
+    return pServSock;
 }
 
 void HttpServerSocket::setDocRoot(const string& docRoot)
@@ -56,10 +55,10 @@ void HttpServerSocket::closeSocket(SocketBase* sock)
         recvInfoTable_.erase(sock);
     }
 
-    Server::getInstance().closeSocket(sock);
+    Server::getInstance()->closeSocket(sock);
 }
 
-int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
+void HttpServerSocket::onReadEvent(SocketBase *sock, const char* buf, size_t size)
 {
     static int seq = 0;
 
@@ -76,7 +75,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     if (!hasBody && tmpData.find("\r\n\r\n") == string::npos)
     {
         log_debug("Wait for more data");
-        return 0;
+        return;
     }
 
     if (!hasBody)
@@ -92,7 +91,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
             log_fatal("parse http error");
             log_hexdump(recvBuf.c_str(), recvBuf.size());
             closeSocket(sock);
-            return 0;
+            return;
         }
 
         if (httpReq.startLine.method == "POST")
@@ -120,7 +119,7 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     if (bodyCnt < contentLength)
     {
         // Wait for more data;
-        return 0;
+        return;
     }
 
     // Now we have the entire HTTP message.
@@ -141,7 +140,6 @@ int HttpServerSocket::readCallBack(const char* buf, size_t size, SocketBase *soc
     }
 
     recvInfoTable_.erase(sock);
-    return 0;
 }
 
 void HttpWorkerThread::handleStatic(HttpRequest& httpReq, ifstream& fs)
@@ -243,14 +241,14 @@ void HttpWorkerThread::workBody()
         if (!parseRet)
         {
             log_fatal("parse http error");
-            Server::getInstance().closeSocket(req_.sock);
+            Server::getInstance()->closeSocket(req_.sock);
             continue;
         }
 
         shared_ptr<SocketBase> sock;
 
         // Check if the socket is still valid in case it's closed by remote peer.
-        sock = Server::getInstance().getSocketByFd(req_.fd);
+        sock = Server::getInstance()->getSocketByFd(req_.fd);
 
         if (!sock || sock.get() != req_.sock || sock->fd() != req_.fd)
         {
@@ -288,10 +286,10 @@ void HttpWorkerThread::workBody()
             sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
             sock->sendStr("Content-Type: text/html\r\n");
             sock->sendStr("Connection: close\r\n\r\n");
-            sock->sendStr("Can't find "+ uri +"!<br>\n");
+            sock->sendStr("404 error! "+ uri +" not found.<br>\n");
         }
 
-        Server::getInstance().closeSocket(sock.get());
+        Server::getInstance()->closeSocket(sock.get());
 
         log_debug("Handle request done, exit workBody\n");
     }

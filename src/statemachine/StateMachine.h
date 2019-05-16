@@ -5,6 +5,7 @@
 
 #include "common/Event.h"
 #include "base/Socket.h"
+#include "base/Singleton.h"
 
 #ifndef STATTE_MACHINE_HH_
 #define STATTE_MACHINE_HH_
@@ -64,32 +65,32 @@ class StateMachine : public StateMachineBase
 
 typedef std::map<uint32_t, StateMachineBase*> GlobalSMList;
 
-class SMFactory
+class SMFactory : public Singleton<SMFactory>
 {
+    friend class Singleton<SMFactory>;
     typedef StateMachineBase* (CreateFunc)();
     typedef std::map<uint32_t, CreateFunc*> SMTypeMap;  // SM_TYPE to SM create function map
 
     public:
-    static SMFactory &getInstance();
+        // operation
+        bool registerSmType(uint32_t machineType, CreateFunc *pf);
+        bool isValidSmType(uint32_t machineType) { return smTypeMap_.find(machineType) != smTypeMap_.end(); }
+        StateMachineBase *createSM(uint32_t MachineType); //crete a new statemachine instance.
 
-    // operation
-    bool registerSmType(uint32_t machineType, CreateFunc *pf);
-    bool isValidSmType(uint32_t machineType) { return smTypeMap_.find(machineType) != smTypeMap_.end(); }
-    StateMachineBase *createSM(uint32_t MachineType); //crete a new statemachine instance.
-
-    void addSM(uint32_t id, StateMachineBase *pSM) { pSM->setId(id); globalSMList_[id] = pSM; }
-    void deleteSM(uint32_t id) { globalSMList_[id] = NULL ; }
-    StateMachineBase* getSM(uint32_t id) { return globalSMList_[id]; }
+        void addSM(uint32_t id, StateMachineBase *pSM) { pSM->setId(id); globalSMList_[id] = pSM; }
+        void deleteSM(uint32_t id) { globalSMList_[id] = NULL ; }
+        StateMachineBase* getSM(uint32_t id) { return globalSMList_[id]; }
 
     private:
-    GlobalSMList       globalSMList_;
-    SMTypeMap          smTypeMap_;
-
+        SMFactory() {}
+        ~SMFactory() {}
+        GlobalSMList    globalSMList_;
+        SMTypeMap       smTypeMap_;
 };
 
 #define SM_REG(SM_TYPE, CLASS) \
     static StateMachineBase* CLASS##Instance() { StateMachineBase *pSM = new CLASS;  pSM->setType(SM_TYPE); return pSM ;} \
-bool unused##SM_TYPE = SMFactory::getInstance().registerSmType(SM_TYPE, CLASS##Instance);  \
+bool unused##SM_TYPE = SMFactory::getInstance()->registerSmType(SM_TYPE, CLASS##Instance);  \
 template class StateMachine<CLASS>;                                           \
 
 template<class T>
@@ -109,7 +110,7 @@ void StateMachine<T>::Drive(const Event& event, SocketBase* sock)
     {
         std::cout<<"call back return is not 0, SM ended\n";
         delete this;
-        SMFactory::getInstance().deleteSM(id_);
+        SMFactory::getInstance()->deleteSM(id_);
     }
 }
 

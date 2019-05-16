@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "base/Observable.h"
+
 using namespace std::placeholders;
 
 namespace yux {
@@ -25,7 +27,7 @@ namespace base {
 
 class Peer
 {
-    public :
+    public:
         Peer() : addr_(nullptr) { }
         Peer(const char *host, uint16_t port) : host_(host), port_(port), addr_(nullptr) {}
         ~Peer() { if (addr_) freeaddrinfo(addr_); addr_ = nullptr; }
@@ -35,28 +37,36 @@ class Peer
         addrinfo     *addr_;
 };
 
-class SocketBase
+class SocketBase;
+
+class ISocketObserver
 {
     public:
-        enum SocketEvent
-        {
-            FIRST = 0,
-            READ = FIRST,
-            WRITE,
-            CLOSE,
-            LAST
-        };
+        virtual void onReadEvent(SocketBase* sock, const char* buff, size_t size) = 0;
+        virtual void onOpenEvent(SocketBase* sock) = 0;
+        virtual void onAcceptEvent(SocketBase* sock) = 0;
+        virtual void onCloseEvent(SocketBase* sock) = 0;
+};
 
-        // For call back. return 0 if OK. return -1 if error.
-        typedef std::function<int (const char*, size_t, SocketBase*)> CallBack;
-        virtual void regCallBack(SocketEvent event, CallBack cb) { callBackList_[event].push_back(cb); }
-        virtual void regReadCallBack(CallBack cb) { regCallBack(SocketEvent::READ, cb); }
+// Default implementation for ISocketObserver
+// So derived class from SocketObserver doesn't need to implement call backs for all the events.
+class SocketObserver : public ISocketObserver
+{
+    public:
+        virtual void onReadEvent(SocketBase* sock, const char* buff, size_t size) {}
+        virtual void onOpenEvent(SocketBase* sock) {}
+        virtual void onAcceptEvent(SocketBase* sock) {}
+        virtual void onCloseEvent(SocketBase* sock) {}
+};
 
+class SocketBase : public Observable<ISocketObserver>
+{
+    public:
         SocketBase();
         SocketBase(int fd, const Peer& remote): fd_(fd), remote_(remote) {}
         virtual ~SocketBase();
 
-        virtual void init() {}
+                virtual void init() {}
         int fd() { return fd_; }
         const Peer& getLocal() { return local_; }
         const Peer& getRemote() { return remote_; }
@@ -77,33 +87,37 @@ class SocketBase
         char rdBuf_[BUF_SIZE];
         Peer remote_;
         Peer local_;
-        std::vector<CallBack> callBackList_[SocketEvent::LAST];
+    private:
+        void notifyCloseEvents(SocketBase* sock) { for (auto ob : observers_) { ob->onCloseEvent(sock); } }
 };
 
 // Client socket
 class Socket : public SocketBase
 {
     public:
-        Socket() {}
         Socket(int fd, const Peer& remote) : SocketBase(fd, remote) {}
-        Socket(const char *host, uint16_t port) { remote_ = Peer(host, port); }
+        Socket(ISocketObserver* pObserver = nullptr) { if (pObserver) { addObserver(pObserver); } }
+        Socket(const char *host, uint16_t port, ISocketObserver* pObserver = nullptr) { remote_ = Peer(host, port); if (pObserver) { addObserver(pObserver); } }
         int connect();
         int connect(const char *host, uint16_t port) { remote_ = Peer(host, port); return connect(); }
         int read();
         int write(uint8_t* buf, size_t size);
+    private:
+        void notifyOpenEvents(SocketBase* sock) { for (auto ob : observers_) { ob->onOpenEvent(sock); } }
+        void notifyReadEvents(SocketBase* sock, char* buf, size_t size) { for (auto ob : observers_) { ob->onReadEvent(sock, buf, size); } }
 };
 
 // Server socket
 class ServerSocket : public SocketBase
 {
     public:
-
-        ServerSocket() {}
-        ServerSocket(const char* host, uint16_t port) { bind(host, port); listen(); }
-        ServerSocket(const char* host, uint16_t port, SocketBase::CallBack cbRead) { bind(host, port); listen(); regCallBack(SocketEvent::READ, cbRead); }
+        ServerSocket(ISocketObserver* pObserver = nullptr) { if (pObserver) { addObserver(pObserver);} }
+        ServerSocket(const char* host, uint16_t port, ISocketObserver* pObserver = nullptr);
         int bind(const char* host, uint16_t port);
         int listen() { return ::listen(fd_, 0); }
         SocketBase* accept();
+    private:
+        void notifyAcceptEvents(SocketBase* sock) { for (auto ob : observers_) { ob->onAcceptEvent(sock); } }
 };
 
 }} //namespace

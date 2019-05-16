@@ -31,11 +31,11 @@ struct RecvInfo
     std::string recvBuf;
 };
 
-class HttpServerSocket : public yux::base::ServerSocket
+class HttpServerSocket : public yux::base::ServerSocket, public yux::base::SocketObserver
 {
 public:
     static HttpServerSocket* create(const std::string& host, uint16_t port = 80);
-    int readCallBack(const char* buf, size_t size, yux::base::SocketBase *sock);
+    void onReadEvent(yux::base::SocketBase *sock, const char* buf, size_t size);
     void setDocRoot(const std::string& docRoot);
     void setMimeFile(const std::string& mimeFile);
     std::string getDocRoot() { return docRoot_; }
@@ -44,7 +44,7 @@ public:
     void closeSocket(SocketBase* sock);
 
 private:
-    HttpServerSocket(const std::string& host, uint16_t port) : ServerSocket(host.c_str(), port) {}
+    HttpServerSocket(const std::string& host, uint16_t port) : ServerSocket(host.c_str(), port, this) { }
     std::string docRoot_;
     std::string mimeFile_;
     std::list<Req> reqList_;

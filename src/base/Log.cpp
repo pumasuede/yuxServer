@@ -17,17 +17,11 @@ string getClassMethodName(string&& prettyFunction)
     return funcName.substr(begin);
 }
 
-Logger& Logger::instance()
-{
-    static Logger logger;
-    return logger;
-}
-
 int log_write(int level, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    int ret = Logger::instance().logv(level, fmt, ap);
+    int ret = Logger::getInstance()->logv(level, fmt, ap);
     va_end(ap);
     return ret;
 }

@@ -1,12 +1,11 @@
 #include "Thread.h"
-#include "Singleton.h"
 
 using namespace std;
 
 namespace yux{
 namespace base{
 
-Thread::Thread(const std::string& name, Thread *parent ) : name_(name), parent_(parent), stop_(false), thr_(nullptr)
+Thread::Thread(const std::string& name, Thread *parent) : name_(name), parent_(parent), stop_(false), thr_(nullptr)
 {
     id_ = Singleton<ThreadManager>::getInstance()->addThread(this);
     log_trace("Thread %d is created", id_);

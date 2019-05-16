@@ -15,17 +15,11 @@ using namespace yux::base;
 namespace yux{
 namespace common{
 
-Server& Server::getInstance()
-{
-    static Server server;
-    return server;
-}
-
-void Server::init(std::string host, uint16_t port, const SocketBase::CallBack& cbRead, Timer* timer)
+void Server::init(std::string host, uint16_t port, SocketObserver *pObserver, Timer* timer)
 {
     // Create socket
     init();
-    ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, cbRead);
+    ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, pObserver);
     addServerSocket(defaultServerSock);
     addTimer(timer);
 }
@@ -51,7 +45,7 @@ void Server::init()
 
 void Server::addTimer(Timer* timer)
 {
-    if (timer == NULL)
+    if (timer == nullptr)
         return;
     timers_.push_back(timer);
 }
@@ -190,7 +184,7 @@ void Server::loopOnce()
                     log_debug("Socket is closed by peer, closing socket - Fd: %d", fd);
                     closeSocket(skt.get());
                 }
-                if (ret < 0)
+                else if (ret < 0)
                 {
                     log_debug("Abnormal in Socket read, will delete socket - Fd: %d", fd);
                     closeSocket(skt.get());

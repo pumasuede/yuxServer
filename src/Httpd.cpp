@@ -78,16 +78,16 @@ class MainThread : public Thread
 
 void MainThread::workBody()
 {
-    Server& mainServer = Server::getInstance();
-    mainServer.init();
+    Server* mainServer = Server::getInstance();
+    mainServer->init();
 
     for (auto& timer : getTimers())
     {
-        mainServer.addTimer(&timer);
+        mainServer->addTimer(&timer);
     }
 
     HttpServerSocket* httpServerSock = HttpServerSocket::create(serverIP, serverPort);
-    mainServer.addServerSocket(httpServerSock);
+    mainServer->addServerSocket(httpServerSock);
 
     const int httpWorkThreadNum = 5;
     for (int i = 0; i < httpWorkThreadNum; i++)
@@ -97,9 +97,9 @@ void MainThread::workBody()
         pThread->detach();
     }
 
-    Singleton<ThreadManager>::getInstance()->dump();
+    ThreadManager::getInstance()->dump();
 
-    mainServer.loop();
+    mainServer->loop();
 }
 
 int main(int argc, char* argv[])

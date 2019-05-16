@@ -12,6 +12,7 @@
 #include "base/Timer.h"
 #include "base/Socket.h"
 #include "base/Fde.h"
+#include "base/Singleton.h"
 #include "Utils.h"
 
 #define HTTP_SERVER_VERSION "1.0.0"
@@ -19,15 +20,14 @@
 namespace yux {
 namespace common {
 
-class Server
+class Server : public yux::base::Singleton<Server>
 {
+    friend class yux::base::Singleton<Server>;
     public:
         typedef yux::base::SocketBase SocketBase;
         typedef yux::base::Timer Timer;
 
-        static Server& getInstance();
-        ~Server();
-        void init(std::string host, uint16_t port, const SocketBase::CallBack& cbRead, Timer* timer = NULL);
+        void init(std::string host, uint16_t port, yux::base::SocketObserver* pObserver, Timer* timer = nullptr);
         void init();
         void loop();
         void loopOnce();
@@ -47,7 +47,8 @@ class Server
         std::shared_ptr<SocketBase> getSocketByFd(int fd) { std::lock_guard<std::mutex> lock(mutex_); return fdToSkt_[fd]; }
 
     private:
-        Server() {};
+        Server() {}
+        ~Server();
         yux::base::Timer* getMinTimer(int current);
         std::set<SocketBase*> servSockList_;
         std::vector<std::shared_ptr<SocketBase>> fdToSkt_;

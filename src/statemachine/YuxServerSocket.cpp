@@ -18,35 +18,34 @@ namespace common{
 YuxServerSocket* YuxServerSocket::create(const char* host, uint16_t port)
 {
     YuxServerSocket* pSock = new YuxServerSocket(host, port);
-    pSock->regReadCallBack(std::bind(&YuxServerSocket::readCallBack, pSock, _1, _2, _3));
     return pSock;
 }
 
-int YuxServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
+void YuxServerSocket::onReadEvent(SocketBase* sock, const char* buf, size_t size)
 {
     std::auto_ptr<msg::Msg> msg(new msg::Msg());
     if (!msg->ParseFromArray(buf, size))
     {
         cout<<"msg parse error "<<"\n";
-        return -1;
+        return;
     }
 
     const msg::Header& header = msg->header();;
     uint32_t msgType = header.type();
     uint32_t smId = header.sm_id();
     uint32_t actionId = header.action_id();
-    if (!SMFactory::getInstance().isValidSmType(msgType))
+    if (!SMFactory::getInstance()->isValidSmType(msgType))
     {
         cout<<"Invalid msg type:"<<msgType<<"\n";
-        return 0;
+        return;
     }
 
     static uint32_t uuid = 0;
-    StateMachineBase* pSM = SMFactory::getInstance().getSM(smId);
+    StateMachineBase* pSM = SMFactory::getInstance()->getSM(smId);
     if (!pSM)
     {
-        pSM = SMFactory::getInstance().createSM(msgType);
-        SMFactory::getInstance().addSM(++uuid, pSM); //assign an unique id;
+        pSM = SMFactory::getInstance()->createSM(msgType);
+        SMFactory::getInstance()->addSM(++uuid, pSM); //assign an unique id;
     }
 
     char evDesc[100];
@@ -54,7 +53,7 @@ int YuxServerSocket::readCallBack(const char* buf, size_t size, SocketBase *sock
 
     Event ev(actionId, evDesc);
     pSM->Drive(ev, sock);
-    return 1;
+    return;
 }
 
 }}

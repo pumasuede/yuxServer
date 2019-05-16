@@ -7,12 +7,16 @@ using namespace std;
 using namespace yux::base;
 using namespace yux::http;
 
-int readCallBack(const char* buf, size_t size, SocketBase *sock)
+class MySocketObserver : public SocketObserver
+{
+    void onReadEvent(SocketBase *sock, const char* buf, size_t size);
+};
+
+void MySocketObserver::onReadEvent(SocketBase *sock, const char* buf, size_t size)
 {
     string data(buf, size);
-    //std::cout<<"received "<<size<<" bytes in call back\n";
     std::cout<<data<<"\n";
-    return 0;
+    //std::cout<<"received "<<size<<" bytes in MySocketObserver::onReadEvent\n";
 }
 
 void timerCallBack(void*)
@@ -22,8 +26,8 @@ void timerCallBack(void*)
 
 int testHttpClient(const char *url)
 {
-    HttpClientSocket httpClient;
-    httpClient.request(url, std::bind(&readCallBack, _1, _2, _3));
+    HttpClientSocket httpClient(new MySocketObserver);
+    httpClient.request(url);
 
     Fdes *fdes = FDES::getInstance();
 

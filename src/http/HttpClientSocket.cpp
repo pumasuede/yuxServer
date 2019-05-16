@@ -19,14 +19,13 @@ void HttpClientSocket::close()
     ::close(fd_);
 }
 
-int HttpClientSocket::readCallBack(const char* buf, size_t size, SocketBase *sock)
+void HttpClientSocket::onReadEvent(SocketBase *sock, const char* buf, size_t size)
 {
     string data(buf, size);
-    log_debug("HttpClientSocket::readCallBack: %s", data.c_str());
-    return 0;
+    log_debug("HttpClientSocket::onReadEvent: %s", data.c_str());
 }
 
-int HttpClientSocket::request(const std::string& url, CallBack cb)
+int HttpClientSocket::request(const std::string& url)
 {
     URLParser urlParser(url);
     urlParser.parse();
@@ -34,7 +33,6 @@ int HttpClientSocket::request(const std::string& url, CallBack cb)
 
     Fdes* fdes = FDES::getInstance();
     fdes->addWatch(fd_, Fde::READ);
-    regReadCallBack(cb);
 
     int con = connect();
     if (con == -1)
