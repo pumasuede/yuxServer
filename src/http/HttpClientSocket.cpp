@@ -12,11 +12,15 @@ using namespace yux::common;
 namespace yux{
 namespace http{
 
-void HttpClientSocket::close()
+HttpClientSocket::~HttpClientSocket()
 {
     Fdes* fdes = FDES::getInstance();
     fdes->delWatch(fd_, Fde::READ);
-    ::close(fd_);
+}
+
+void HttpClientSocket::onCloseEvent(SocketBase *sock)
+{
+    log_debug("Closing socket fd:%d", sock->fd());
 }
 
 void HttpClientSocket::onReadEvent(SocketBase *sock, const char* buf, size_t size)

@@ -24,21 +24,26 @@ addrinfo* Peer::addr()
     return addr_;
 }
 
-SocketBase::SocketBase()
+SocketBase::SocketBase() : status_(CLOSED)
 {
     fd_ = socket(PF_INET, SOCK_STREAM, 0);
+    status_ = OPEN;
 }
 
 SocketBase::~SocketBase()
 {
     log_debug("Socket %p is being deleted, fd_:%d", this, fd_);
-    close();
+    if (status_ != CLOSED)
+    {
+        close();
+    }
 }
 
 void SocketBase::close()
 {
     notifyCloseEvents(this);
     ::close(fd_);
+    status_ = CLOSED;
 }
 
 void SocketBase::setNonBlocking()
@@ -60,6 +65,11 @@ void SocketBase::setNonBlocking()
 int Socket::connect()
 {
     int rc = ::connect(fd_, remote_.addr()->ai_addr, remote_.addr()->ai_addrlen);
+    if (rc != -1)
+    {
+        status_ = CONNECTED;
+    }
+
     notifyOpenEvents(this);
     return rc;
 }
@@ -165,12 +175,12 @@ int Socket::write(uint8_t* buf, size_t size)
 
 ServerSocket::ServerSocket(const char* host, uint16_t port, ISocketObserver* pObserver)
 {
-    bind(host, port);
-
     if (pObserver)
     {
         addObserver(pObserver);
     }
+
+    bind(host, port);
 
     listen();
 }
@@ -187,6 +197,19 @@ int ServerSocket::bind(const char* host, uint16_t port)
    }
 
    return rc;
+}
+
+int ServerSocket::listen()
+{
+    int rc = ::listen(fd_, 0);
+    if (rc == -1)
+    {
+        std::cout<<"Socket listen failed on port "<<local_.port_<<" : "<<strerror(errno) <<"\n";
+        exit(-1);
+    }
+
+    status_ = LISTEN;
+    return rc;
 }
 
 SocketBase* ServerSocket::accept()

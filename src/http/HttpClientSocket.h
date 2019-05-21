@@ -11,11 +11,13 @@ class HttpClientSocket : public yux::base::Socket, public yux::base::SocketObser
     public:
         HttpClientSocket() { addObserver(this); }
         HttpClientSocket(SocketObserver* pObserver) { addObserver(pObserver); }
+        ~HttpClientSocket();
+
         void onReadEvent(SocketBase *sock, const char* buf, size_t size);
+        void onCloseEvent(SocketBase *sock);
 
         int request(const std::string& url);
         void setTimeout(uint32_t timeOut) { m_timeOut = timeOut; }
-        void close();
     private:
         uint32_t m_timeOut;
 };

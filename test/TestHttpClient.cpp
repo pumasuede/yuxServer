@@ -10,6 +10,7 @@ using namespace yux::http;
 class MySocketObserver : public SocketObserver
 {
     void onReadEvent(SocketBase *sock, const char* buf, size_t size);
+    void onCloseEvent(SocketBase *sock) { std::cout<<"MySocketObserver closing socket fd:"<<sock->fd()<<"\n"; }
 };
 
 void MySocketObserver::onReadEvent(SocketBase *sock, const char* buf, size_t size)
@@ -63,13 +64,11 @@ int testHttpClient(const char *url)
             if (ret == 0)
             {
                 log_debug("Socket is closed by peer, closing socket - Fd: %d", fd);
-                httpClient.close();
                 return -1;
             }
 
             if (ret < 0)
             {
-                httpClient.close();
                 cout<<"Socket read error, will delete socket - Fd: "<<fd <<"\n";
                 return -1;
             }

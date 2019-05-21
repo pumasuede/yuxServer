@@ -62,11 +62,20 @@ class SocketObserver : public ISocketObserver
 class SocketBase : public Observable<ISocketObserver>
 {
     public:
+        enum Status
+        {
+            CLOSED,
+            OPEN,
+            CONNECTED,
+            LISTEN
+        };
+
         SocketBase();
-        SocketBase(int fd, const Peer& remote): fd_(fd), remote_(remote) {}
+        // Create a socket object based on a opened socket(already has fd), which can be used by server.
+        SocketBase(int fd, const Peer& remote): fd_(fd), remote_(remote), status_(OPEN) { }
         virtual ~SocketBase();
 
-                virtual void init() {}
+        virtual void init() {}
         int fd() { return fd_; }
         const Peer& getLocal() { return local_; }
         const Peer& getRemote() { return remote_; }
@@ -85,6 +94,7 @@ class SocketBase : public Observable<ISocketObserver>
         #define BUF_SIZE 8192
         int fd_;
         char rdBuf_[BUF_SIZE];
+        Status status_;
         Peer remote_;
         Peer local_;
     private:
@@ -114,7 +124,7 @@ class ServerSocket : public SocketBase
         ServerSocket(ISocketObserver* pObserver = nullptr) { if (pObserver) { addObserver(pObserver);} }
         ServerSocket(const char* host, uint16_t port, ISocketObserver* pObserver = nullptr);
         int bind(const char* host, uint16_t port);
-        int listen() { return ::listen(fd_, 0); }
+        int listen();
         SocketBase* accept();
     private:
         void notifyAcceptEvents(SocketBase* sock) { for (auto ob : observers_) { ob->onAcceptEvent(sock); } }
