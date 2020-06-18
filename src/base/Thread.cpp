@@ -1,19 +1,21 @@
 #include "Thread.h"
+#include "Scheduler.h"
 
 using namespace std;
 
-namespace yux{
-namespace base{
+namespace yux {
+namespace base {
 
-Thread::Thread(const std::string& name, Thread *parent) : name_(name), parent_(parent), stop_(false), thr_(nullptr)
+Thread::Thread(const std::string& name, Scheduler *pScheduler) :
+    name_(name), pScheduler_(pScheduler), stop_(false), thr_(nullptr)
 {
     id_ = Singleton<ThreadManager>::getInstance()->addThread(this);
-    log_trace("Thread %d is created", id_);
+    log_trace("Thread %s [%d] is created", name.c_str(), id_);
 }
 
 Thread::~Thread()
 {
-    log_trace("Deleting thread %d...", id_);
+    log_trace("Removing thread %s [%d]...", name_.c_str(), id_);
     Singleton<ThreadManager>::getInstance()->dropThread(this);
     delete thr_;
 }
@@ -29,8 +31,19 @@ void Thread::workBody()
     int cnt = 0;
     while (!stop_)
     {
-        log_debug("---workd body: %s Tid 0x%x wake times : %d", name_.c_str(), tid_, cnt++);
-        usleep(cnt/3*1000*100);
+        if (pScheduler_)
+        {
+            WorkItem workItem = pScheduler_->getWorkItem();
+            workItem.run();
+        }
+        else
+        {
+            // A thread which does not belong to ang scheduler.
+            // print the thread info as work
+            log_debug("---workd body: %s Tid 0x%x wake times : %d",
+                      name_.c_str(), tid_, cnt++);
+            usleep(cnt/3*1000*100);
+        }
     }
 }
 

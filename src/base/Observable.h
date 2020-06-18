@@ -6,7 +6,7 @@
 namespace yux {
 namespace base {
 
-// T is an observer class
+// T is an observer inferface which defines the call back functions on specific envents
 // Use template here so we can use custom observer class which can define various call back interfaces.
 template <class T>
 class Observable

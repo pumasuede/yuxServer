@@ -20,14 +20,16 @@
 namespace yux {
 namespace common {
 
+typedef yux::base::SocketBase SocketBase;
+typedef yux::base::Timer Timer;
+
 class Server : public yux::base::Singleton<Server>
 {
+
     friend class yux::base::Singleton<Server>;
     public:
-        typedef yux::base::SocketBase SocketBase;
-        typedef yux::base::Timer Timer;
-
-        void init(std::string host, uint16_t port, yux::base::SocketObserver* pObserver, Timer* timer = nullptr);
+        void init(std::string host, uint16_t port, yux::base::SocketObserver* pObserver,
+                  Timer* timer = nullptr);
         void init();
         void loop();
         void loopOnce();
@@ -47,13 +49,13 @@ class Server : public yux::base::Singleton<Server>
         std::shared_ptr<SocketBase> getSocketByFd(int fd) { std::lock_guard<std::mutex> lock(mutex_); return fdToSkt_[fd]; }
 
     private:
-        Server() {}
+        Server() : fdes_(nullptr) { }
         ~Server();
         yux::base::Timer* getMinTimer(int current);
         std::set<SocketBase*> servSockList_;
         std::vector<std::shared_ptr<SocketBase>> fdToSkt_;
         std::list<Timer*> timers_;
-        yux::base::Fdes* fdes_;
+        yux::base::Fdes *fdes_;
         bool stop_;
         std::mutex mutex_;
 };

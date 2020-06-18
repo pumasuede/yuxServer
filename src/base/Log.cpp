@@ -177,9 +177,9 @@ inline static const char* level_name(int level)
         case Logger::LEVEL_ERROR:
             return "[ERROR] ";
         case Logger::LEVEL_WARN:
-            return "[WARN ] ";
+            return "[WARN]  ";
         case Logger::LEVEL_INFO:
-            return "[INFO ] ";
+            return "[INFO]  ";
         case Logger::LEVEL_DEBUG:
             return "[DEBUG] ";
         case Logger::LEVEL_TRACE:
@@ -209,7 +209,7 @@ int Logger::logv(int level, const char *fmt, va_list ap)
     time = tv.tv_sec;
     tm = localtime(&time);
 
-    len = sprintf(ptr, "%04d-%02d-%02d %02d:%02d:%02d.%03d ",
+    len = sprintf(ptr, "%04d-%02d-%02dT%02d:%02d:%02d.%03d ",
             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
             tm->tm_hour, tm->tm_min, tm->tm_sec, (int)(tv.tv_usec/1000));
     if (len < 0)

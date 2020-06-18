@@ -4,7 +4,7 @@
 #include "base/Timer.h"
 #include "common/Config.h"
 #include "common/Server.h"
-#include "http/HttpClientSocket.h"
+#include "http/HttpClient.h"
 
 using namespace std;
 using namespace yux::base;
@@ -22,7 +22,7 @@ class MySocketObserver : public SocketObserver
     void onReadEvent(SocketBase *sock, const char* buf, size_t size);
 };
 
-void  MySocketObserver::onReadEvent(SocketBase *sock, const char* buf, size_t size)
+void MySocketObserver::onReadEvent(SocketBase *sock, const char* buf, size_t size)
 {
     log_trace("readCallBack %d bytes", size);
     char pageFile[] = "baidu.html";
@@ -43,8 +43,8 @@ int Timer1Callback(void* pServer)
     const char *hostname = "www.baidu.com";
     log_debug("*** Timer1Callback called. Try to request %s", hostname);
 
-    HttpClientSocket *httpClient = new HttpClientSocket(new MySocketObserver);
-    Server::getInstance()->regSocket(httpClient);
+    HttpClient *httpClient = new HttpClient(new MySocketObserver);
+    Server::getInstance()->regSocket(httpClient->getSocket());
     httpClient->request(hostname);
 
     return 0;

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <array>
 
-#include "HttpServerSocket.h"
+#include "HttpService.h"
 #include "HttpConfig.h"
 
 #include "base/Log.h"
@@ -21,34 +21,23 @@ using namespace yux::parser;
 namespace yux{
 namespace http{
 
-std::mutex HttpWorkerThread::mutex_;
-std::condition_variable HttpWorkerThread::cv_;
-
-HttpServerSocket* HttpServerSocket::create(const string& host, uint16_t port)
+HttpService* HttpService::create(const string& host, uint16_t port)
 {
-    HttpServerSocket* pServSock = new HttpServerSocket(host, port);
-
-    string docRoot = Config::getInstance()->get("document_root", ".");
+    Config *pConfig = Config::getInstance();
+    string numWorkThread = pConfig->get("work_thread", "5");
+    string docRoot = pConfig->get("document_root", ".");
     string mimeFile = Config::getInstance()->get("mime_file", "mime_types");
-    pServSock->setDocRoot(docRoot);
-    pServSock->setMimeFile(mimeFile);
 
     MimeConfig* pMiMeConfig = MimeConfig::getInstance();
     pMiMeConfig->loadConfigFile(mimeFile);
-    return pServSock;
+
+    Scheduler *pScheduler = new Scheduler("HTTPService", stoi(numWorkThread));
+
+    HttpService *pService = new HttpService(host, port, docRoot, pScheduler);
+    return pService;
 }
 
-void HttpServerSocket::setDocRoot(const string& docRoot)
-{
-    docRoot_ = docRoot;
-}
-
-void HttpServerSocket::setMimeFile(const string& mimeFile)
-{
-    mimeFile_ = mimeFile;
-}
-
-void HttpServerSocket::closeSocket(SocketBase* sock)
+void HttpService::closeSocket(SocketBase* sock)
 {
     if (recvInfoTable_.find(sock) != recvInfoTable_.end())
     {
@@ -58,10 +47,9 @@ void HttpServerSocket::closeSocket(SocketBase* sock)
     Server::getInstance()->closeSocket(sock);
 }
 
-void HttpServerSocket::onReadEvent(SocketBase *sock, const char* buf, size_t size)
+void HttpService::onReadEvent(SocketBase *sock, const char* buf, size_t size)
 {
-    static int seq = 0;
-
+    static uint32_t seq = 0;
     RecvInfo& recvInfo = recvInfoTable_[sock];
     string& recvBuf = recvInfo.recvBuf; // received data per socket.
     int& bodyCnt = recvInfo.bodyCnt;
@@ -123,31 +111,28 @@ void HttpServerSocket::onReadEvent(SocketBase *sock, const char* buf, size_t siz
     }
 
     // Now we have the entire HTTP message.
-    log_debug("<Recv HTTP seq:%d fd:%d  message size:%d, body size:%d", seq, sock->fd(), recvBuf.size(), bodyCnt);
+    log_debug("<Recv HTTP seq:%d fd:%d  message size:%d, body size:%d",
+              seq++, sock->fd(), recvBuf.size(), bodyCnt);
     log_trace_hexdump(recvBuf.c_str(), recvBuf.size());
 
-    Req req;
-    req.fd = sock->fd();
-    req.sock = sock;
-    req.data = std::move(recvBuf);
+    Req *pReq = new Req();
+    pReq->fd = sock->fd();
+    pReq->sock = sock;
+    pReq->data = std::move(recvBuf);
+    pReq->seq = seq;
 
-    if (req.data.size() > 0)
-    {
-        lock_guard<std::mutex> lock(HttpWorkerThread::mutex_);
-        req.seq = seq++;
-        reqList_.push_back(req);
-        HttpWorkerThread::cv_.notify_all();
-    }
+    auto cb = bind(&HttpService::handleRequest, this, (void*) pReq);
+    scheduler_->enqueueWorkItem(WorkItem(cb));
 
     recvInfoTable_.erase(sock);
 }
 
-void HttpWorkerThread::handleStatic(HttpRequest& httpReq, ifstream& fs)
+void HttpService::handleStatic(SocketBase *sock, HttpRequest& httpReq, ifstream& fs)
 {
     const string& scriptName = httpReq.startLine.scriptName;
 
     string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
-    string localFile = pServerSock_->getDocRoot() + scriptName;
+    string localFile = docRoot_ + scriptName;
 
     string contentType = MimeConfig::getInstance()->get(fileExt, "");
     bool isBin = isBinary(contentType);
@@ -155,7 +140,6 @@ void HttpWorkerThread::handleStatic(HttpRequest& httpReq, ifstream& fs)
     // process static request
     int fileSize = getFileSize(localFile);
     log_debug("Process static %s file request. File size: %d", isBin ? "binary" : "text", fileSize);
-    SocketBase* sock = req_.sock;
 
     sock->sendStr("Content-Type: " + contentType + "\r\n");
     sock->sendStr("Content-Length: " + to_string(fileSize) + "\r\n");
@@ -177,18 +161,19 @@ void HttpWorkerThread::handleStatic(HttpRequest& httpReq, ifstream& fs)
     }
 }
 
-void HttpWorkerThread::handleScript(HttpRequest& httpReq)
+void HttpService::handleScript(SocketBase *sock, HttpRequest& httpReq)
 {
+    static uint32_t seq = 0;
     const string& scriptName = httpReq.startLine.scriptName;
     const string& queryString = httpReq.startLine.queryString;
 
     string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
-    string localFile = pServerSock_->getDocRoot() + scriptName;
+    string localFile = docRoot_ + scriptName;
 
     // call fasct CGI to process php script
     log_debug("Preparing to run script - %s", scriptName.c_str());
     fastCgi_.setPort(fileExt == "php" ? 9000: 9100);
-    fastCgi_.setRequestId(req_.seq);
+    fastCgi_.setRequestId(++seq);
 
     fastCgi_.setParams("SCRIPT_FILENAME", localFile);
     fastCgi_.setParams("QUERY_STRING", queryString);
@@ -197,7 +182,7 @@ void HttpWorkerThread::handleScript(HttpRequest& httpReq)
     fastCgi_.setParams("CONTENT_LENGTH", httpReq.header["Content-Length"]);
     fastCgi_.setParams("SCRIPT_NAME", scriptName);
     fastCgi_.setParams("DOCUMENT_URI", httpReq.startLine.URI);
-    fastCgi_.setParams("DOCUMENT_ROOT", pServerSock_->getDocRoot());
+    fastCgi_.setParams("DOCUMENT_ROOT", docRoot_);
     fastCgi_.setParams("SERVER_PROTOCOL", "HTTP/1.1");
     fastCgi_.setParams("GATEWAY_INTERFACE", "CGI/1.1");
     fastCgi_.setParams("SERVER_SOFTWARE", "yuHttpd/1.0");
@@ -212,87 +197,77 @@ void HttpWorkerThread::handleScript(HttpRequest& httpReq)
     }
 
     fastCgi_.sendRequest();
-    fastCgi_.readFromCGI(req_.sock);
+    fastCgi_.readFromCGI(sock);
     fastCgi_.endRequest();
 }
 
-void HttpWorkerThread::workBody()
+void HttpService::handleRequest(void *pArg)
 {
-    list<Req>& reqList = pServerSock_->getReqList();
+    std::unique_ptr<Req> req((Req*)pArg);
+    HttpRequest httpReq;
 
-    while (1)
+    // parse the entire http message.
+    bool parseRet = httpParser_.parse(httpReq, req->data.c_str(), req->data.size());
+    const string& uri = httpReq.startLine.URI;
+    log_debug("Process http request seq:%d uri:%s", req->seq, uri.c_str());
+
+    if (!parseRet)
     {
+        log_fatal("parse http error");
+        Server::getInstance()->closeSocket(req->sock);
+        return;
+    }
+
+    shared_ptr<SocketBase> sock;
+
+    // Check if the socket is still valid in case it's closed by remote peer.
+    sock = Server::getInstance()->getSocketByFd(req->fd);
+
+    if (!sock || sock.get() != req->sock || sock->fd() != req->fd)
+    {
+        log_error("The socket on fd %d is already closed, nothing to do", req->fd);
+        return;
+    }
+
+
+    const string& scriptName = httpReq.startLine.scriptName;
+    string localFile = docRoot_ + scriptName;
+
+    string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
+    string contentType = MimeConfig::getInstance()->get(fileExt, "");
+    bool isBin = isBinary(contentType);
+    ifstream file(localFile.c_str(), isBin ? ios::binary : ios::in);
+
+    if (file.is_open())
+    {
+        sock->sendStr("HTTP/1.1 200 OK\r\n");
+        sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
+        // process php script
+        if (fileExt == "php" || fileExt == "cgi")
         {
-            unique_lock<std::mutex> lock(mutex_);
-            cv_.wait(lock, [&]{return reqList.size() > 0;});
-
-            req_ = reqList.front();
-            reqList.pop_front();
-            log_debug("Fetch one request from queue");
-        }
-
-        HttpRequest httpReq;
-
-        // parse the entire http message.
-        bool parseRet = httpParser_.parse(httpReq, req_.data.c_str(), req_.data.size());
-        const string& uri = httpReq.startLine.URI;
-        log_debug("Process http request seq:%d uri:%s", req_.seq, uri.c_str());
-
-        if (!parseRet)
-        {
-            log_fatal("parse http error");
-            Server::getInstance()->closeSocket(req_.sock);
-            continue;
-        }
-
-        shared_ptr<SocketBase> sock;
-
-        // Check if the socket is still valid in case it's closed by remote peer.
-        sock = Server::getInstance()->getSocketByFd(req_.fd);
-
-        if (!sock || sock.get() != req_.sock || sock->fd() != req_.fd)
-        {
-            log_error("The socket on fd %d is already closed, nothing to do", req_.fd);
-            continue;
-        }
-
-
-        const string& scriptName = httpReq.startLine.scriptName;
-        string localFile = pServerSock_->getDocRoot() + scriptName;
-
-        string fileExt = scriptName.substr(scriptName.find_last_of('.') + 1);
-        string contentType = MimeConfig::getInstance()->get(fileExt, "");
-        bool isBin = isBinary(contentType);
-        ifstream file(localFile.c_str(), isBin ? ios::binary : ios::in);
-
-        if (file.is_open())
-        {
-            sock->sendStr("HTTP/1.1 200 OK\r\n");
-            sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
-            // process php script
-            if (fileExt == "php" || fileExt == "cgi")
-            {
-                handleScript(httpReq);
-            }
-            else
-            {
-                handleStatic(httpReq, file);
-            }
-            file.close();
+            handleScript(req->sock, httpReq);
         }
         else
         {
-            sock->sendStr("HTTP/1.1 404 Not Found\r\n");
-            sock->sendStr("Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n");
-            sock->sendStr("Content-Type: text/html\r\n");
-            sock->sendStr("Connection: close\r\n\r\n");
-            sock->sendStr("404 error! "+ uri +" not found.<br>\n");
+            handleStatic(req->sock, httpReq, file);
         }
-
-        Server::getInstance()->closeSocket(sock.get());
-
-        log_debug("Handle request done, exit workBody\n");
+        file.close();
     }
+    else
+    {
+        string notFound = \
+        "HTTP/1.1 404 Not Found\r\n"
+        "Server: yuHttpd/" HTTP_SERVER_VERSION "\r\n"
+        "Content-Type: text/html\r\n"
+        "Connection: close\r\n\r\n"
+        "404 error! "+ uri +" not found.<br>\n";
+
+        sock->sendStr(notFound);
+    }
+
+    closeSocket(sock.get());
+
+    log_debug("Handle request done\n");
 }
 
 }} // name space

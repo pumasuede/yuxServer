@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "base/Observable.h"
 
@@ -46,6 +47,7 @@ class ISocketObserver
         virtual void onOpenEvent(SocketBase* sock) = 0;
         virtual void onAcceptEvent(SocketBase* sock) = 0;
         virtual void onCloseEvent(SocketBase* sock) = 0;
+        virtual ~ISocketObserver() {}
 };
 
 // Default implementation for ISocketObserver

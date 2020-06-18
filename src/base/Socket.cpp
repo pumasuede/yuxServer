@@ -7,10 +7,8 @@
 
 using namespace std;
 
-namespace yux
-{
-namespace base
-{
+namespace yux {
+namespace base {
 
 addrinfo* Peer::addr()
 {
@@ -32,17 +30,17 @@ SocketBase::SocketBase() : status_(CLOSED)
 
 SocketBase::~SocketBase()
 {
-    log_debug("Socket %p is being deleted, fd_:%d", this, fd_);
-    if (status_ != CLOSED)
-    {
-        close();
-    }
+    log_debug("Socket %p is being deleted, fd_:%d, status:%d", this, fd_, status_);
+    if (status_ == CLOSED)
+        return;
+    close();
 }
 
 void SocketBase::close()
 {
     notifyCloseEvents(this);
     ::close(fd_);
+    fd_ = -1;
     status_ = CLOSED;
 }
 
@@ -51,9 +49,9 @@ void SocketBase::setNonBlocking()
     int opt;
 
     opt = fcntl(fd_, F_GETFL);
-    if (opt < 0) { 
+    if (opt < 0) {
         printf("fcntl(F_GETFL) fail.");
-        exit(-1); 
+        exit(-1);
     }
     opt |= O_NONBLOCK;
     if (fcntl(fd_, F_SETFL, opt) < 0) {
@@ -221,18 +219,19 @@ SocketBase* ServerSocket::accept()
 
     Peer remote(inet_ntoa(clientAddr.sin_addr), ntohs(clientAddr.sin_port));
 
-    SocketBase *sock = new Socket(newFd, remote);
-    sock->setNonBlocking();
+    SocketBase *pSock = new Socket(newFd, remote);
+    pSock->setNonBlocking();
 
     // Do callback for ACCEPT event
-    notifyAcceptEvents(sock);
+    notifyAcceptEvents(pSock);
 
+    // Observer of listen socket should also observe spawned data sockets
     for (auto ob : observers_)
     {
-        sock->addObserver(ob);
+        pSock->addObserver(ob);
     }
 
-    return sock;
+    return pSock;
 }
 
 }}

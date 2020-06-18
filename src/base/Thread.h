@@ -13,10 +13,12 @@
 namespace yux{
 namespace base{
 
+class Scheduler;
+
 class Thread
 {
     public:
-        Thread(const std::string& name, Thread *parent = NULL);
+        Thread(const std::string& name, Scheduler *pScheduler = nullptr);
         virtual ~Thread();
 
         size_t getId() { return id_; }
@@ -32,8 +34,8 @@ class Thread
         size_t          id_;     // For thread manager
         std::thread::id tid_;
         std::thread     *thr_;
-        Thread          *parent_;
         bool            stop_;
+        Scheduler       *pScheduler_;
         void threadEntry();
         virtual void workBody();
 };

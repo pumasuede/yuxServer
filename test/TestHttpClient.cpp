@@ -1,7 +1,7 @@
 #include <iostream>
 #include "base/Fde.h"
 #include "base/Log.h"
-#include "http/HttpClientSocket.h"
+#include "http/HttpClient.h"
 
 using namespace std;
 using namespace yux::base;
@@ -27,11 +27,13 @@ void timerCallBack(void*)
 
 int testHttpClient(const char *url)
 {
-    HttpClientSocket httpClient(new MySocketObserver);
-    httpClient.request(url);
+    HttpClient httpClient(new MySocketObserver);
+    Socket *pSock = httpClient.getSocket();
 
     Fdes *fdes = FDES::getInstance();
+    fdes->addWatch(pSock->fd(), Fde::READ);
 
+    httpClient.request(url);
     while (1)
     {
         int n = fdes->wait();
@@ -56,10 +58,10 @@ int testHttpClient(const char *url)
         {
             int fd = fde->fd();
 
-            if (fd != httpClient.fd() || !fde->readable())
+            if (fd != pSock->fd() || !fde->readable())
                 continue;
 
-            int ret = httpClient.read();
+            int ret = pSock->read();
 
             if (ret == 0)
             {

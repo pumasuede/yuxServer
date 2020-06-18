@@ -13,8 +13,7 @@
 #include "common/Config.h"
 #include "common/Server.h"
 
-#include "http/HttpClientSocket.h"
-#include "http/HttpServerSocket.h"
+#include "http/HttpService.h"
 
 using namespace std;
 using namespace yux::base;
@@ -86,16 +85,8 @@ void MainThread::workBody()
         mainServer->addTimer(&timer);
     }
 
-    HttpServerSocket* httpServerSock = HttpServerSocket::create(serverIP, serverPort);
-    mainServer->addServerSocket(httpServerSock);
-
-    const int httpWorkThreadNum = 5;
-    for (int i = 0; i < httpWorkThreadNum; i++)
-    {
-        HttpWorkerThread *pThread = new HttpWorkerThread("Http work thread"+std::to_string(i), httpServerSock);
-        pThread->start();
-        pThread->detach();
-    }
+    HttpService* httpService = HttpService::create(serverIP, serverPort);
+    mainServer->addServerSocket(httpService->getServerSocket());
 
     ThreadManager::getInstance()->dump();
 

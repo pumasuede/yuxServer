@@ -15,12 +15,15 @@ using namespace yux::base;
 namespace yux{
 namespace common{
 
-void Server::init(std::string host, uint16_t port, SocketObserver *pObserver, Timer* timer)
+void Server::init(std::string host, uint16_t port, SocketObserver *pObserver,
+                  Timer* timer)
 {
-    // Create socket
     init();
+
+    // Create socket
     ServerSocket* defaultServerSock = new ServerSocket(host.c_str(), port, pObserver);
     addServerSocket(defaultServerSock);
+
     addTimer(timer);
 }
 
@@ -28,7 +31,7 @@ void Server::init()
 {
     stop_ = false;
     rlimit r;
-    if (-1 == getrlimit( RLIMIT_NOFILE, &r ))
+    if (-1 == getrlimit(RLIMIT_NOFILE, &r))
         return;
     uint32_t fdMax = r.rlim_max < 65535 && r.rlim_max > 0 ? r.rlim_max : 65535;
     log_debug("fdMax:%d", fdMax);
@@ -156,10 +159,10 @@ void Server::loopOnce()
     {
         int fd = fde->fd();
 
-        shared_ptr<SocketBase> skt;
+        SocketBase *skt;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            skt = fdToSkt_[fd];
+            skt = fdToSkt_[fd].get();
         }
 
         if (!skt)
@@ -168,12 +171,11 @@ void Server::loopOnce()
             continue;
         }
 
-
         if (fde->readable())
         {
-            if (servSockList_.find(skt.get()) != servSockList_.end())
+            if (servSockList_.find(skt) != servSockList_.end())
             {
-                SocketBase *newSkt = dynamic_cast<ServerSocket*>(skt.get())->accept();
+                SocketBase *newSkt = dynamic_cast<ServerSocket*>(skt)->accept();
                 regSocket(newSkt);
             }
             else
@@ -182,12 +184,12 @@ void Server::loopOnce()
                 if (ret == 0)
                 {
                     log_debug("Socket is closed by peer, closing socket - Fd: %d", fd);
-                    closeSocket(skt.get());
+                    closeSocket(skt);
                 }
                 else if (ret < 0)
                 {
                     log_debug("Abnormal in Socket read, will delete socket - Fd: %d", fd);
-                    closeSocket(skt.get());
+                    closeSocket(skt);
                 }
             }
         }
